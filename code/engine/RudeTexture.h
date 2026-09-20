@@ -19,7 +19,7 @@ public:
 	
 	int LoadFromPVRTFile(const char *name);
 	int LoadFromPVRTPointer(const char *name, const void *data);
-	int LoadFromPNG(const char *name);
+	int LoadFromPNG(const char *name, bool genMipmaps = false);
 
 	void SetActive();
 	

@@ -640,6 +640,10 @@ unsigned int PVRTLoadPartialTextureFromPointer(const void * const pointer,
 	{
 		glTexParameterf(GL_TEXTURE_2D, 0x84FE /* GL_TEXTURE_MAX_ANISOTROPY_EXT */, s_maxAniso);
 	}
+	if(psPVRHeader->dwMipMapCount > 0)
+	{
+		glTexParameterf(GL_TEXTURE_2D, 0x8501 /* GL_TEXTURE_LOD_BIAS */, -0.5f);
+	}
 #endif
 
 	if(psTextureHeader)

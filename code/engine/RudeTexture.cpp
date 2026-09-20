@@ -54,6 +54,25 @@ int RudeTexture::LoadFromPVRTFile(const char *name)
 		return -1;
 	RUDE_REPORT("LoadFromPVRTFile %s\n", name);
 	
+	// First, check if an uncompressed/high-res .png exists for this texture
+	char pngbasename[kNameLen];
+	strncpy(pngbasename, name, kNameLen - 1);
+	pngbasename[kNameLen - 1] = '\0';
+	char *ext = strrchr(pngbasename, '.');
+	if(ext != NULL && (strcasecmp(ext, ".pvr") == 0 || strcasecmp(ext, ".bmp") == 0))
+		*ext = '\0';
+
+	char pngfilename[kNameLen + 4];
+	snprintf(pngfilename, sizeof(pngfilename), "%s.png", pngbasename);
+
+	char pngfilepath[512];
+	if(RudeFileGetFile(pngfilename, pngfilepath, sizeof(pngfilepath), false))
+	{
+		int res = LoadFromPNG(pngbasename, true);
+		if(res == 0)
+			return 0;
+	}
+
 	strncpy(m_name, name, kNameLen - 1);
 	m_name[kNameLen - 1] = '\0';
 	
@@ -102,7 +121,7 @@ int RudeTexture::LoadFromPVRTPointer(const char *name, const void *data)
 	return 0;
 }
 
-int RudeTexture::LoadFromPNG(const char *name)
+int RudeTexture::LoadFromPNG(const char *name, bool genMipmaps)
 {	
 	if(name == NULL || name[0] == '\0')
 		return -1;
@@ -331,8 +350,81 @@ LoadFromPNG_URLFail:
 	glBindTexture(GL_TEXTURE_2D, m_texture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 0,
 		GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	if(genMipmaps)
+	{
+		int curW = m_width;
+		int curH = m_height;
+		int level = 0;
+		unsigned char *curPixels = pixels;
+		unsigned char *prevBuf = NULL;
+
+		while(curW > 1 || curH > 1)
+		{
+			int nextW = curW > 1 ? curW / 2 : 1;
+			int nextH = curH > 1 ? curH / 2 : 1;
+			unsigned char *nextBuf = (unsigned char *) malloc(nextW * nextH * 4);
+			if(!nextBuf) break;
+
+			for(int y = 0; y < nextH; y++)
+			{
+				for(int x = 0; x < nextW; x++)
+				{
+					int sx = x * 2;
+					int sy = y * 2;
+					int sx2 = (curW > 1) ? (sx + 1) : sx;
+					int sy2 = (curH > 1) ? (sy + 1) : sy;
+
+					for(int c = 0; c < 4; c++)
+					{
+						int p00 = curPixels[(sy * curW + sx) * 4 + c];
+						int p01 = curPixels[(sy * curW + sx2) * 4 + c];
+						int p10 = curPixels[(sy2 * curW + sx) * 4 + c];
+						int p11 = curPixels[(sy2 * curW + sx2) * 4 + c];
+						nextBuf[(y * nextW + x) * 4 + c] = (unsigned char)((p00 + p01 + p10 + p11) / 4);
+					}
+				}
+			}
+			level++;
+			glTexImage2D(GL_TEXTURE_2D, level, GL_RGBA, nextW, nextH, 0,
+				GL_RGBA, GL_UNSIGNED_BYTE, nextBuf);
+
+			if(prevBuf) free(prevBuf);
+			prevBuf = nextBuf;
+			curPixels = nextBuf;
+			curW = nextW;
+			curH = nextH;
+		}
+		if(prevBuf) free(prevBuf);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		static bool s_anisoChecked = false;
+		static float s_maxAniso = 1.0f;
+		if(!s_anisoChecked)
+		{
+			s_anisoChecked = true;
+			const char *exts = (const char *)glGetString(GL_EXTENSIONS);
+			if(exts && strstr(exts, "GL_EXT_texture_filter_anisotropic"))
+			{
+				glGetFloatv(0x84FF /* GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT */, &s_maxAniso);
+				if(s_maxAniso > 8.0f) s_maxAniso = 8.0f;
+			}
+		}
+		if(s_maxAniso > 1.0f)
+		{
+			glTexParameterf(GL_TEXTURE_2D, 0x84FE /* GL_TEXTURE_MAX_ANISOTROPY_EXT */, s_maxAniso);
+		}
+
+		// Negative LOD bias keeps textures crisper and clearer
+		glTexParameterf(GL_TEXTURE_2D, 0x8501 /* GL_TEXTURE_LOD_BIAS */, -0.5f);
+	}
+	else
+	{
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	}
 	free(pixels);
 
 	if(glGetError() != GL_NO_ERROR)
