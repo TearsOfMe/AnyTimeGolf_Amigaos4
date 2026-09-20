@@ -60,5 +60,30 @@ bool RudeFileGetFile(const char *filename, char *buffer, int bufsize, bool canfa
 	return true;
 #endif
 
-}
+#ifdef RUDE_AMIGAOS4
+	if(filename == NULL || buffer == NULL || bufsize <= 0)
+		return false;
+	const char *formats[] = {"PROGDIR:data/%s", "data/%s"};
+	for(unsigned int i = 0; i < sizeof(formats) / sizeof(formats[0]); ++i)
+	{
+		int written = snprintf(buffer, (size_t)bufsize, formats[i], filename);
+		if(written < 0 || written >= bufsize)
+			continue;
 
+		FILE *file = fopen(buffer, "rb");
+		if(file != NULL)
+		{
+			fclose(file);
+			return true;
+		}
+	}
+
+	buffer[0] = '\0';
+	RUDE_ASSERT(canfail, "Could not locate file %s", filename);
+	return false;
+#endif
+
+	buffer[0] = '\0';
+	RUDE_ASSERT(canfail, "Unsupported platform while locating file %s", filename);
+	return false;
+}

@@ -35,6 +35,9 @@ RudeGlobals * RudeGlobals::GetInstance()
 
 void RudeGlobals::GetPath(char *path)
 {
+	if(path == 0)
+		return;
+	path[0] = '\0';
 	
 #ifdef RUDE_IPHONE
 	CFBundleRef bundle = CFBundleGetMainBundle();
@@ -45,4 +48,3 @@ void RudeGlobals::GetPath(char *path)
 #endif
 
 }
-

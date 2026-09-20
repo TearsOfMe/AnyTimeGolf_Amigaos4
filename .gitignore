@@ -6,5 +6,8 @@
 FreeImage.dll
 *.sdf
 *.suo
-code/game/win32/Debug
-code/lib/bullet/out
+# AmigaOS-specific
+build-amigaos4/
+*.lha
+*.zip
+staging/

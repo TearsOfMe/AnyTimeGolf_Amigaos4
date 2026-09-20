@@ -105,4 +105,24 @@ private:
 
 #endif // RUDE_WIN
 
+#ifdef RUDE_AMIGAOS4
+
+class RudeTimer
+{
+public:
+	RudeTimer() { Restart(); }
+	void Restart() { m_starttime = SDL_GetPerformanceCounter(); }
+	float ElapsedSeconds()
+	{
+		return static_cast<float>(SDL_GetPerformanceCounter() - m_starttime) /
+			static_cast<float>(SDL_GetPerformanceFrequency());
+	}
+	float ElapsedMilliseconds() { return ElapsedSeconds() * 1000.0f; }
+
+private:
+	Uint64 m_starttime;
+};
+
+#endif // RUDE_AMIGAOS4
+
 #endif

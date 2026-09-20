@@ -90,7 +90,7 @@ private:
 	SystemSoundID m_soundids[kNumSounds];
 #endif
 
-#if defined(RUDE_WIN)
+#if defined(RUDE_WIN) || defined(RUDE_AMIGAOS4)
 	int m_soundids[kNumSounds];
 #endif
 	

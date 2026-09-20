@@ -12,7 +12,7 @@
 #include "Rude.h"
 #include "RudeMesh.h"
 
-#if defined(RUDE_WIN) || defined(RUDE_MACOS)
+#if defined(RUDE_WIN) || defined(RUDE_MACOS) || defined(RUDE_AMIGAOS4)
 #define RUDE_SOFTWARE_SKIN
 #else
 #define RUDE_PALETTE_MATRIX_SKIN

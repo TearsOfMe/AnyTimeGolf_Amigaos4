@@ -43,7 +43,6 @@
 
 
 typedef unsigned int UINT;
-typedef unsigned char BYTE;
 
 using namespace std;
 
@@ -56,19 +55,28 @@ RudeFont RudeFontManager::m_fonts[kNumFonts];
  */
 void RudeFontManager::InitFonts()
 {
+	int result;
 	if(RUDE_IPAD)
 	{
-		m_fonts[kDefaultFont].Init("ab28.fnt");
-		m_fonts[kDefaultFontOutline].Init("ab28o2.fnt");
-		m_fonts[kBigFont].Init("ab48.fnt");
-		m_fonts[kBigFontOutline].Init("ab48o2.fnt");
+		result = m_fonts[kDefaultFont].Init("ab28.fnt");
+		RUDE_ASSERT(result == 0, "Could not load font ab28.fnt");
+		result = m_fonts[kDefaultFontOutline].Init("ab28o2.fnt");
+		RUDE_ASSERT(result == 0, "Could not load font ab28o2.fnt");
+		result = m_fonts[kBigFont].Init("ab48.fnt");
+		RUDE_ASSERT(result == 0, "Could not load font ab48.fnt");
+		result = m_fonts[kBigFontOutline].Init("ab48o2.fnt");
+		RUDE_ASSERT(result == 0, "Could not load font ab48o2.fnt");
 	}
 	else
 	{
-		m_fonts[kDefaultFont].Init("ab18.fnt");
-		m_fonts[kDefaultFontOutline].Init("ab18o2.fnt");
-		m_fonts[kBigFont].Init("ab28.fnt");
-		m_fonts[kBigFontOutline].Init("ab28o2.fnt");
+		result = m_fonts[kDefaultFont].Init("ab18.fnt");
+		RUDE_ASSERT(result == 0, "Could not load font ab18.fnt");
+		result = m_fonts[kDefaultFontOutline].Init("ab18o2.fnt");
+		RUDE_ASSERT(result == 0, "Could not load font ab18o2.fnt");
+		result = m_fonts[kBigFont].Init("ab28.fnt");
+		RUDE_ASSERT(result == 0, "Could not load font ab28.fnt");
+		result = m_fonts[kBigFontOutline].Init("ab28o2.fnt");
+		RUDE_ASSERT(result == 0, "Could not load font ab28o2.fnt");
 	}
 }
 
@@ -172,8 +180,12 @@ RudeFont::~RudeFont()
  */
 int RudeFont::Init(const char *fontFileIn)
 {
+	if(fontFileIn == NULL || fontFileIn[0] == '\0')
+		return -1;
+
 	char fontFile[512];
-	RudeFileGetFile(fontFileIn, fontFile, 512);
+	if(!RudeFileGetFile(fontFileIn, fontFile, sizeof(fontFile), false))
+		return -1;
 	
 	// Load the font
 	FILE *f = fopen(fontFile, "rb");
@@ -181,7 +193,11 @@ int RudeFont::Init(const char *fontFileIn)
 	
 	// Determine format by reading the first bytes of the file
 	char str[4] = {0};
-	fread(str, 3, 1, f);
+	if(fread(str, 1, 3, f) != 3)
+	{
+		fclose(f);
+		return -1;
+	}
 	fseek(f, 0, SEEK_SET);
 	
 	CFontLoader *loader = new CFontLoaderTextFormat(f, this, fontFile);
@@ -189,8 +205,13 @@ int RudeFont::Init(const char *fontFileIn)
 	
 	int r = loader->Load();
 	delete loader;
-	
-	return r;
+	if(r != 0 || fontHeight <= 0 || scaleW <= 0 || scaleH <= 0 ||
+	   pages.empty())
+		return -1;
+	for(size_t i = 0; i < pages.size(); ++i)
+		if(pages[i] < 0)
+			return -1;
+	return 0;
 }
 
 void RudeFont::SetTextEncoding(EFontTextEncoding encoding)
@@ -689,6 +710,9 @@ CFontLoader::CFontLoader(FILE *f, RudeFont *font, const char *fontFile)
 
 void CFontLoader::LoadPage(int id, const char *pageFile, const char *fontFile)
 {
+	if(id < 0 || pageFile == NULL || pageFile[0] == '\0' ||
+	   (size_t)id >= font->pages.size())
+		return;
 	/*
 	string str;
 	
@@ -705,13 +729,17 @@ void CFontLoader::LoadPage(int id, const char *pageFile, const char *fontFile)
 	 */
 	
 	char pageFile2[512];
-	
-	for(unsigned int i = 0; i < strlen(pageFile); i++)
+	unsigned int pageLength = strlen(pageFile);
+	if(pageLength >= sizeof(pageFile2))
+		return;
+	memcpy(pageFile2, pageFile, pageLength + 1);
+
+	for(unsigned int i = 0; i < pageLength; i++)
 	{
-		pageFile2[i] = pageFile[i];
-		
-		if(pageFile2[i] == '.')
+		if(pageFile2[i] == '.') {
 			pageFile2[i] = '\0';
+			break;
+		}
 	}
 	
 	// Load the font textures
@@ -747,7 +775,7 @@ void CFontLoader::SetCommonInfo(int fontHeight, int base, int scaleW, int scaleH
 	font->scaleH = scaleH;
 	font->pages.resize(pages);
 	for( int n = 0; n < pages; n++ )
-		font->pages[n] = 0;
+		font->pages[n] = -1;
 	
 	if( isPacked && outlineThickness )
 		font->hasOutline = true;
@@ -1018,12 +1046,12 @@ void CFontLoaderTextFormat::InterpretChar(string &str, int start)
 
 void CFontLoaderTextFormat::InterpretCommon(string &str, int start)
 {
-	int fontHeight;
-	int base;
-	int scaleW;
-	int scaleH;
-	int pages;
-	int packed;
+	int fontHeight = 0;
+	int base = 0;
+	int scaleW = 0;
+	int scaleH = 0;
+	int pages = 0;
+	int packed = 0;
 	
 	// Read all attributes
 	int pos, pos2 = start;
@@ -1065,7 +1093,7 @@ void CFontLoaderTextFormat::InterpretCommon(string &str, int start)
 
 void CFontLoaderTextFormat::InterpretInfo(string &str, int start)
 {
-	int outlineThickness;
+	int outlineThickness = 0;
 	
 	// Read all attributes
 	int pos, pos2 = start;

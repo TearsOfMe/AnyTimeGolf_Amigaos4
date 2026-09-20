@@ -73,6 +73,10 @@ public:
 #if defined(RUDE_IPHONE) || defined(RUDE_MACOS)
 		return rand();
 #endif
+
+#ifdef RUDE_AMIGAOS4
+		return rand();
+#endif
 	}
 
 	/**
@@ -158,6 +162,10 @@ public:
 #endif
 		
 #if defined(RUDE_IPHONE) || defined(RUDE_MACOS)
+		return atan2(x, y);
+#endif
+
+#ifdef RUDE_AMIGAOS4
 		return atan2(x, y);
 #endif
 	}

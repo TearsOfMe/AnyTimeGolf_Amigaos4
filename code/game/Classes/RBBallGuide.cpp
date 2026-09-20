@@ -220,7 +220,9 @@ void RBBallGuide::Render()
 		
 		glVertexPointer(3, GL_FLOAT, 0, point);
 		glColorPointer(4, GL_FLOAT, 0, colors);
-		glDrawArrays(GL_LINES, 0, 4);
+		glDrawArrays(GL_LINES, 0, 2);
 	}
+
+	glEnable(GL_TEXTURE_2D);
 }
 

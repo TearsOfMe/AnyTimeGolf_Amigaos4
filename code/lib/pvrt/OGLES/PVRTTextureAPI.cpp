@@ -24,6 +24,12 @@
 #include "PVRTMisc.h"
 #include "PVRTResourceFile.h"
 
+#if defined(RUDE_AMIGAOS4)
+extern "C" void glCompressedTexImage2D(GLenum target, GLint level,
+	GLenum internalformat, GLsizei width, GLsizei height, GLint border,
+	GLsizei imageSize, const GLvoid *data);
+#endif
+
 /*****************************************************************************
 ** Functions
 ****************************************************************************/
@@ -232,6 +238,8 @@ unsigned int PVRTLoadPartialTextureFromPointer(const void * const pointer,
 											   GLuint * const texName,
 											   const void *psTextureHeader)
 {
+	while(glGetError() != GL_NO_ERROR);
+
 	PVR_Texture_Header* psPVRHeader = (PVR_Texture_Header*)pointer;
 	unsigned int u32NumSurfs;
 
@@ -492,13 +500,91 @@ unsigned int PVRTLoadPartialTextureFromPointer(const void * const pointer,
 			{
 				if(((signed int)nMIPMapLevel - (signed int)nLoadFromLevel) >= 0)
 				{
-					//if(psPVRHeader->dwpfFlags&PVRTEX_CUBEMAP)
-					//{
-					//	/* Load uncompressed texture data at selected MIP level */
-					//	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+i,nMIPMapLevel-nLoadFromLevel,textureType,nSizeX,nSizeY,
-					//		0, textureType,textureFormat,theTextureToLoad);
-					//}
-					//else
+					unsigned int pixelType = psPVRHeader->dwpfFlags & PVRTEX_PIXELTYPE;
+					if(pixelType == OGL_RGBA_5551)
+					{
+						unsigned char *u8Temp = (unsigned char *)malloc(nSizeX * nSizeY * 4);
+						if(!u8Temp)
+						{
+							printf("PVRTTexture: Out of memory unpacking OGL_RGBA_5551\n");
+							return 0;
+						}
+						const unsigned char *src = (const unsigned char *)theTextureToLoad;
+						for(unsigned int p = 0; p < nSizeX * nSizeY; ++p)
+						{
+							unsigned short val = (unsigned short)(src[p * 2] | (src[p * 2 + 1] << 8));
+							u8Temp[p * 4 + 0] = (unsigned char)((((val >> 11) & 0x1F) * 255 + 15) / 31);
+							u8Temp[p * 4 + 1] = (unsigned char)((((val >> 6) & 0x1F) * 255 + 15) / 31);
+							u8Temp[p * 4 + 2] = (unsigned char)((((val >> 1) & 0x1F) * 255 + 15) / 31);
+							u8Temp[p * 4 + 3] = (val & 1) ? 255 : 0;
+						}
+						glTexImage2D(GL_TEXTURE_2D, nMIPMapLevel - nLoadFromLevel, GL_RGBA,
+									 nSizeX, nSizeY, 0, GL_RGBA, GL_UNSIGNED_BYTE, u8Temp);
+						FREE(u8Temp);
+					}
+					else if(pixelType == OGL_RGBA_4444)
+					{
+						unsigned char *u8Temp = (unsigned char *)malloc(nSizeX * nSizeY * 4);
+						if(!u8Temp)
+						{
+							printf("PVRTTexture: Out of memory unpacking OGL_RGBA_4444\n");
+							return 0;
+						}
+						const unsigned char *src = (const unsigned char *)theTextureToLoad;
+						for(unsigned int p = 0; p < nSizeX * nSizeY; ++p)
+						{
+							unsigned short val = (unsigned short)(src[p * 2] | (src[p * 2 + 1] << 8));
+							u8Temp[p * 4 + 0] = (unsigned char)((((val >> 12) & 0x0F) * 255 + 7) / 15);
+							u8Temp[p * 4 + 1] = (unsigned char)((((val >> 8) & 0x0F) * 255 + 7) / 15);
+							u8Temp[p * 4 + 2] = (unsigned char)((((val >> 4) & 0x0F) * 255 + 7) / 15);
+							u8Temp[p * 4 + 3] = (unsigned char)(((val & 0x0F) * 255 + 7) / 15);
+						}
+						glTexImage2D(GL_TEXTURE_2D, nMIPMapLevel - nLoadFromLevel, GL_RGBA,
+									 nSizeX, nSizeY, 0, GL_RGBA, GL_UNSIGNED_BYTE, u8Temp);
+						FREE(u8Temp);
+					}
+					else if(pixelType == OGL_RGB_565)
+					{
+						unsigned char *u8Temp = (unsigned char *)malloc(nSizeX * nSizeY * 4);
+						if(!u8Temp)
+						{
+							printf("PVRTTexture: Out of memory unpacking OGL_RGB_565\n");
+							return 0;
+						}
+						const unsigned char *src = (const unsigned char *)theTextureToLoad;
+						for(unsigned int p = 0; p < nSizeX * nSizeY; ++p)
+						{
+							unsigned short val = (unsigned short)(src[p * 2] | (src[p * 2 + 1] << 8));
+							u8Temp[p * 4 + 0] = (unsigned char)((((val >> 11) & 0x1F) * 255 + 15) / 31);
+							u8Temp[p * 4 + 1] = (unsigned char)((((val >> 5) & 0x3F) * 255 + 31) / 63);
+							u8Temp[p * 4 + 2] = (unsigned char)((((val) & 0x1F) * 255 + 15) / 31);
+							u8Temp[p * 4 + 3] = 255;
+						}
+						glTexImage2D(GL_TEXTURE_2D, nMIPMapLevel - nLoadFromLevel, GL_RGBA,
+									 nSizeX, nSizeY, 0, GL_RGBA, GL_UNSIGNED_BYTE, u8Temp);
+						FREE(u8Temp);
+					}
+					else if(pixelType == OGL_RGB_888)
+					{
+						unsigned char *u8Temp = (unsigned char *)malloc(nSizeX * nSizeY * 4);
+						if(!u8Temp)
+						{
+							printf("PVRTTexture: Out of memory unpacking OGL_RGB_888\n");
+							return 0;
+						}
+						const unsigned char *src = (const unsigned char *)theTextureToLoad;
+						for(unsigned int p = 0; p < nSizeX * nSizeY; ++p)
+						{
+							u8Temp[p * 4 + 0] = src[p * 3 + 2]; // R
+							u8Temp[p * 4 + 1] = src[p * 3 + 1]; // G
+							u8Temp[p * 4 + 2] = src[p * 3 + 0]; // B
+							u8Temp[p * 4 + 3] = 255;            // A
+						}
+						glTexImage2D(GL_TEXTURE_2D, nMIPMapLevel - nLoadFromLevel, GL_RGBA,
+									 nSizeX, nSizeY, 0, GL_RGBA, GL_UNSIGNED_BYTE, u8Temp);
+						FREE(u8Temp);
+					}
+					else
 					{
 						/* Load uncompressed texture data at selected MIP level */
 						glTexImage2D(GL_TEXTURE_2D,nMIPMapLevel-nLoadFromLevel,textureType,nSizeX,nSizeY,0, textureType,textureFormat,theTextureToLoad);
@@ -509,7 +595,7 @@ unsigned int PVRTLoadPartialTextureFromPointer(const void * const pointer,
 			int error = glGetError();
 			if(error)
 			{
-				printf("PVRTTexture:PVRTLoadPartialTextureFromPointer failed: glBindTexture() failed. (0x%x)\n", error);
+				printf("PVRTTexture:PVRTLoadPartialTextureFromPointer failed: glTexImage2D() failed. (0x%x)\n", error);
 				return 0;
 			}
 
@@ -529,6 +615,32 @@ unsigned int PVRTLoadPartialTextureFromPointer(const void * const pointer,
 	}
 
 	*texName = textureName;
+
+	glBindTexture(GL_TEXTURE_2D, textureName);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	if(psPVRHeader->dwMipMapCount > 0)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	else
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+#if defined(RUDE_AMIGAOS4)
+	static bool s_anisoChecked = false;
+	static float s_maxAniso = 1.0f;
+	if(!s_anisoChecked)
+	{
+		s_anisoChecked = true;
+		const char *exts = (const char *)glGetString(GL_EXTENSIONS);
+		if(exts && strstr(exts, "GL_EXT_texture_filter_anisotropic"))
+		{
+			glGetFloatv(0x84FF /* GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT */, &s_maxAniso);
+			if(s_maxAniso > 8.0f) s_maxAniso = 8.0f;
+		}
+	}
+	if(s_maxAniso > 1.0f)
+	{
+		glTexParameterf(GL_TEXTURE_2D, 0x84FE /* GL_TEXTURE_MAX_ANISOTROPY_EXT */, s_maxAniso);
+	}
+#endif
 
 	if(psTextureHeader)
 	{
@@ -576,11 +688,63 @@ unsigned int PVRTLoadPartialTextureFromPVR(const char * const filename,
 	CPVRTResourceFile TexFile(filename);
 	if (!TexFile.IsOpen()) return 0;
 
+#if defined(RUDE_AMIGAOS4)
+	const unsigned char *source =
+		static_cast<const unsigned char *>(TexFile.DataPtr());
+	const size_t size = TexFile.Size();
+	if(size < sizeof(PVR_Texture_Header))
+		return 0;
+	unsigned char *normalized = static_cast<unsigned char *>(malloc(size));
+	if(normalized == NULL)
+		return 0;
+	memcpy(normalized, source, size);
+	PVR_Texture_Header *header =
+		reinterpret_cast<PVR_Texture_Header *>(normalized);
+	unsigned int *fields = reinterpret_cast<unsigned int *>(header);
+	for(size_t i = 0; i < sizeof(PVR_Texture_Header) / sizeof(unsigned int); ++i)
+	{
+		const unsigned char *raw = source + i * sizeof(unsigned int);
+		fields[i] = static_cast<unsigned int>(raw[0]) |
+			(static_cast<unsigned int>(raw[1]) << 8) |
+			(static_cast<unsigned int>(raw[2]) << 16) |
+			(static_cast<unsigned int>(raw[3]) << 24);
+	}
+	if(header->dwHeaderSize < sizeof(PVR_Texture_Header) ||
+	   header->dwHeaderSize > size ||
+	   header->dwTextureDataSize > size - header->dwHeaderSize)
+	{
+		free(normalized);
+		return 0;
+	}
+	if((header->dwpfFlags & PVRTEX_PIXELTYPE) == OGL_PVRTC2 ||
+	   (header->dwpfFlags & PVRTEX_PIXELTYPE) == OGL_PVRTC4)
+	{
+		/* PVRTC blocks are pairs of 32-bit words in little-endian;
+		   swap each 4-byte group so the software decompressor reads
+		   correct colour and modulation values on big-endian. */
+		unsigned char *pixels = normalized + header->dwHeaderSize;
+		const size_t bytes = size - header->dwHeaderSize;
+		for(size_t i = 0; i + 3 < bytes; i += 4)
+		{
+			unsigned char b0 = pixels[i];
+			unsigned char b1 = pixels[i + 1];
+			pixels[i]     = pixels[i + 3];
+			pixels[i + 1] = pixels[i + 2];
+			pixels[i + 2] = b1;
+			pixels[i + 3] = b0;
+		}
+	}
+	unsigned int result = PVRTLoadPartialTextureFromPointer(
+		normalized, texPtr, nLoadFromLevel, texName, psTextureHeader);
+	free(normalized);
+	return result;
+#else
 	return PVRTLoadPartialTextureFromPointer(TexFile.DataPtr(),
 		texPtr,
 		nLoadFromLevel,
 		texName,
 		psTextureHeader);
+#endif
 }
 
 /*!***************************************************************************

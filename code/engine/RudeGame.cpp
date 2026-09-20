@@ -124,6 +124,11 @@ float RudeGame::GetTime()
 
 #endif
 
+#ifdef RUDE_AMIGAOS4
+	return static_cast<float>(SDL_GetPerformanceCounter()) /
+		static_cast<float>(SDL_GetPerformanceFrequency());
+#endif
+
 	return 0.0f;
 }
 
@@ -182,7 +187,19 @@ float RudeGame::GetDelta()
 #ifdef RUDE_MACOS
 	return 0.0f;
 #endif
-}
 
+#ifdef RUDE_AMIGAOS4
+	static Uint64 previous = SDL_GetPerformanceCounter();
+	Uint64 current = SDL_GetPerformanceCounter();
+	float delta = static_cast<float>(current - previous) /
+		static_cast<float>(SDL_GetPerformanceFrequency());
+	previous = current;
+	if(delta > 0.3f)
+		delta = 0.3f;
+	return delta;
+#endif
+
+	return 0.0f;
+}
 
 

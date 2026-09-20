@@ -294,14 +294,22 @@ void RBGame::StylusMove(RudeScreenVertex &p)
 void RBGame::TouchDown(RudeScreenVertex &n)
 {
 	RudeTouch *touch = m_touchtracker.NewTouch(n);
+	if(touch == 0)
+	{
+		m_touchtracker.ReleaseAllTouches();
+		touch = m_touchtracker.NewTouch(n);
+	}
 	RUDE_ASSERT(touch, "Could not create touch");
 	
-	m_game->TouchDown(touch);
+	if(touch)
+		m_game->TouchDown(touch);
 }
 
 void RBGame::TouchMove(RudeScreenVertex &n, RudeScreenVertex &p)
 {
 	RudeTouch *touch = m_touchtracker.GetTouch(p);
+	if(touch == 0)
+		touch = m_touchtracker.GetTouch(n);
 	
 	if(touch == 0)
 		return;
@@ -320,7 +328,10 @@ void RBGame::TouchUp(RudeScreenVertex &n, RudeScreenVertex &p)
 		touch = m_touchtracker.GetTouch(p);
 	
 	if(touch == 0)
+	{
+		m_touchtracker.ReleaseAllTouches();
 		return;
+	}
 	
 	touch->m_location = n;
 	

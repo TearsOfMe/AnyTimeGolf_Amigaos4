@@ -54,5 +54,6 @@ void RBGolfPin::Render()
 	glColorPointer(4, GL_UNSIGNED_BYTE, 0, colors);
 	glDrawArrays(GL_LINES, 0, 2);
 
+	glEnable(GL_TEXTURE_2D);
 }
 

@@ -77,7 +77,8 @@ void RudeControl::Load(const char *name)
 	snprintf(filename, 256, "%s.ui", name);
 
 	char buffer[512];
-	RudeFileGetFile(filename, buffer, 512, false);
+	if(!RudeFileGetFile(filename, buffer, sizeof(buffer), false))
+		return;
 
 	FILE *file = fopen(buffer, "r");
 	RUDE_ASSERT(file, "Could not open %s", buffer);
@@ -398,5 +399,4 @@ RudeControl * ConstructControl(RudeControl *parent, std::list<std::string> &toke
 }
 
 RudeControlRegistration controlRegistration("RudeControl", ConstructControl);
-
 

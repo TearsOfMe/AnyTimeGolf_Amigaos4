@@ -131,6 +131,15 @@ int RudeSkybox::Load(const char *name)
 		sprintf(file, "%s%d", name, i+1);
 		
 		m_textures[i] = RudeTextureManager::GetInstance()->LoadTextureFromPVRTFile(file);
+		RudeTexture *tex = RudeTextureManager::GetInstance()->GetTexture(m_textures[i]);
+		if(tex)
+		{
+			tex->SetActive();
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		}
 	}
 	
 	return 0;
@@ -151,7 +160,9 @@ void RudeSkybox::Render()
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CW);
 	
+	glDepthMask(GL_FALSE);
 	RGL.Enable(kDepthTest, false);
+	glDisable(GL_DEPTH_TEST);
 	RGL.EnableClient(kVertexArray, true);
 	RGL.EnableClient(kColorArray, true);
 	RGL.EnableClient(kTextureCoordArray, true);
@@ -176,6 +187,8 @@ void RudeSkybox::Render()
 	}
 	
 	glPopMatrix();
+	glDepthMask(GL_TRUE);
+	glFrontFace(GL_CCW);
 }
 
 

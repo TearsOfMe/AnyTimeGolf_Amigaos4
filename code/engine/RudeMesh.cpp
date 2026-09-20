@@ -37,10 +37,11 @@ int RudeMesh::Load(const char *name)
 	RUDE_REPORT("RudeMesh::Load %s\n", name);
 	
 	char filename[64];
-	sprintf(filename, "%s.POD", name);
+	snprintf(filename, sizeof(filename), "%s.POD", name);
 	
 	char modelfile[512];
-	RudeFileGetFile(filename, modelfile, 512);
+	if(!RudeFileGetFile(filename, modelfile, sizeof(modelfile), false))
+		return -1;
 	
 	int result = m_model.ReadFromFile(modelfile, 0, 0);
 	
@@ -56,11 +57,10 @@ int RudeMesh::Load(const char *name)
 		RUDE_ASSERT(texture, "Invalid texture in model");
 		
 		char texturename[64];
-		sprintf(texturename, "%s", texture->pszName);
-		int texturenamelen = strlen(texturename);
-		
-		// cut off the last 4 chars
-		texturename[texturenamelen-4] = '\0';
+		snprintf(texturename, sizeof(texturename), "%s", texture->pszName);
+		char *extension = strrchr(texturename, '.');
+		if(extension != NULL)
+			*extension = '\0';
 		
 		m_textures[i] = RudeTextureManager::GetInstance()->LoadTextureFromPVRTFile(texturename);
 		RUDE_ASSERT(m_textures[i] >= 0, "Could not load texture");
@@ -85,38 +85,6 @@ int RudeMesh::Load(const char *name)
 	
 	RUDE_ASSERT(foundRenderable, "Didn't find any renderable meshes in %s", name);
 	
-	// flip endianess of colors stored in meshes
-	for(unsigned int i = 0; i < m_model.nNumMesh; i++)
-	{
-		SPODMesh *mesh = &m_model.pMesh[i];
-		
-		RUDE_ASSERT(mesh->pInterleaved, "Mesh data must be interleaved");
-			
-		if((mesh->sVtxColours.n > 0))
-		{
-			RUDE_ASSERT(mesh->sVtxColours.eType == EPODDataRGBA, "Vertex colors must be in RGBA format");
-			
-			if(mesh->sVtxColours.eType == EPODDataRGBA)
-			{
-				unsigned char *c = (mesh->pInterleaved + (long)mesh->sVtxColours.pData);
-				
-				for(unsigned int j = 0; j < mesh->nNumVertex; j++)
-				{
-					unsigned int *cc = (unsigned int *) c;
-					unsigned int b = *cc & 0x000000FF;
-					unsigned int g = (*cc & 0x0000FF00) >> 8;
-					unsigned int r = (*cc & 0x00FF0000) >> 16;
-					//unsigned int a = (*cc & 0xFF000000) >> 24;
-					b = g = r;
-					
-					*cc = 0xFF000000 | (b << 16) | (g << 8) | r;
-					
-					c += mesh->sVtxColours.nStride;
-				}
-			}
-		}
-	}
-	
 	return 0;
 	
 }
@@ -131,11 +99,10 @@ void RudeMesh::AddTextureOverride(const char *oldTexture, const char *newTexture
 		RUDE_ASSERT(texture, "Invalid texture in model");
 		
 		char texturename[64];
-		sprintf(texturename, "%s", texture->pszName);
-		int texturenamelen = strlen(texturename);
-		
-		// cut off the last 4 chars
-		texturename[texturenamelen-4] = '\0';
+		snprintf(texturename, sizeof(texturename), "%s", texture->pszName);
+		char *extension = strrchr(texturename, '.');
+		if(extension != NULL)
+			*extension = '\0';
 		
 		if(strcmp(oldTexture, texturename) == 0)
 		{
@@ -317,4 +284,3 @@ void RudeMesh::Render()
 #endif
 		
 }
-

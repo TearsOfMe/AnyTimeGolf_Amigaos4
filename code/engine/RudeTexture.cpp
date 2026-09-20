@@ -24,6 +24,9 @@
 #include <FreeImage.h>
 #endif
 
+#if defined(RUDE_AMIGAOS4)
+#include <png.h>
+#endif
 
 #include "PVRTTexture.h"
 #include "PVRTTextureAPI.h"
@@ -38,7 +41,7 @@ RudeTexture::RudeTexture()
 
 RudeTexture::~RudeTexture()
 {
-	if(m_texture == -1)
+	if(m_texture != static_cast<unsigned int>(-1))
 	{
 		glDeleteTextures(1, &m_texture);
 		m_texture = -1;
@@ -47,15 +50,23 @@ RudeTexture::~RudeTexture()
 
 int RudeTexture::LoadFromPVRTFile(const char *name)
 {
+	if(name == NULL || name[0] == '\0')
+		return -1;
 	RUDE_REPORT("LoadFromPVRTFile %s\n", name);
 	
-	strncpy(m_name, name, kNameLen);
+	strncpy(m_name, name, kNameLen - 1);
+	m_name[kNameLen - 1] = '\0';
 	
 	char filename[kNameLen + 4];
-	sprintf(filename, "%s.pvr", name);
+	const char *extension = strrchr(name, '.');
+	if(extension != NULL && strcasecmp(extension, ".pvr") == 0)
+		snprintf(filename, sizeof(filename), "%s", name);
+	else
+		snprintf(filename, sizeof(filename), "%s.pvr", name);
 	
 	char filepath[512];
-	RudeFileGetFile(filename, filepath, 512);
+	if(!RudeFileGetFile(filename, filepath, sizeof(filepath), false))
+		return -1;
 	
 	PVR_Texture_Header header;
 
@@ -73,7 +84,10 @@ int RudeTexture::LoadFromPVRTFile(const char *name)
 
 int RudeTexture::LoadFromPVRTPointer(const char *name, const void *data)
 {
-	strncpy(m_name, name, kNameLen);
+	if(name == NULL || data == NULL)
+		return -1;
+	strncpy(m_name, name, kNameLen - 1);
+	m_name[kNameLen - 1] = '\0';
 	
 	PVR_Texture_Header header;
 	
@@ -90,13 +104,20 @@ int RudeTexture::LoadFromPVRTPointer(const char *name, const void *data)
 
 int RudeTexture::LoadFromPNG(const char *name)
 {	
+	if(name == NULL || name[0] == '\0')
+		return -1;
 	// flush glGetError
 	glGetError();
 
-	strncpy(m_name, name, kNameLen);
+	strncpy(m_name, name, kNameLen - 1);
+	m_name[kNameLen - 1] = '\0';
 
-	char filename[64];
-	sprintf(filename, "%s.png", name);
+	char filename[128];
+	const char *extension = strrchr(name, '.');
+	if(extension != NULL && strcasecmp(extension, ".png") == 0)
+		snprintf(filename, sizeof(filename), "%s", name);
+	else
+		snprintf(filename, sizeof(filename), "%s.png", name);
 
 #if defined(RUDE_IPHONE) || defined(RUDE_MACOS)
 
@@ -222,6 +243,106 @@ LoadFromPNG_URLFail:
 
 	return 0;
 #endif
+
+#if defined(RUDE_AMIGAOS4)
+	char filepath[512];
+	if(!RudeFileGetFile(filename, filepath, sizeof(filepath), false))
+		return -1;
+
+	FILE *file = fopen(filepath, "rb");
+	if(file == NULL)
+		return -1;
+
+	png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL,
+		NULL, NULL);
+	png_infop info = png == NULL ? NULL : png_create_info_struct(png);
+	if(png == NULL || info == NULL)
+	{
+		if(info != NULL)
+			png_destroy_read_struct(&png, NULL, NULL);
+		else if(png != NULL)
+			png_destroy_read_struct(&png, NULL, NULL);
+		fclose(file);
+		return -1;
+	}
+
+	if(setjmp(png_jmpbuf(png)) != 0)
+	{
+		png_destroy_read_struct(&png, &info, NULL);
+		fclose(file);
+		return -1;
+	}
+
+	png_init_io(png, file);
+	png_read_info(png, info);
+
+	png_uint_32 width = png_get_image_width(png, info);
+	png_uint_32 height = png_get_image_height(png, info);
+	int colorType = png_get_color_type(png, info);
+	int bitDepth = png_get_bit_depth(png, info);
+
+	if(bitDepth == 16)
+		png_set_strip_16(png);
+	if(colorType == PNG_COLOR_TYPE_PALETTE)
+		png_set_palette_to_rgb(png);
+	if(colorType == PNG_COLOR_TYPE_GRAY && bitDepth < 8)
+		png_set_expand_gray_1_2_4_to_8(png);
+	if(png_get_valid(png, info, PNG_INFO_tRNS))
+		png_set_tRNS_to_alpha(png);
+	if(colorType == PNG_COLOR_TYPE_GRAY ||
+	   colorType == PNG_COLOR_TYPE_GRAY_ALPHA)
+		png_set_gray_to_rgb(png);
+	if((colorType & PNG_COLOR_MASK_ALPHA) == 0 &&
+	   !png_get_valid(png, info, PNG_INFO_tRNS))
+		png_set_add_alpha(png, 0xff, PNG_FILLER_AFTER);
+
+	png_read_update_info(png, info);
+	png_size_t rowBytes = png_get_rowbytes(png, info);
+	unsigned char *pixels = static_cast<unsigned char *>(
+		malloc(rowBytes * height));
+	png_bytep *rows = static_cast<png_bytep *>(
+		malloc(sizeof(png_bytep) * height));
+	if(pixels == NULL || rows == NULL)
+	{
+		free(rows);
+		free(pixels);
+		png_destroy_read_struct(&png, &info, NULL);
+		fclose(file);
+		return -1;
+	}
+
+	for(png_uint_32 y = 0; y < height; ++y)
+		rows[y] = pixels + y * rowBytes;
+	png_read_image(png, rows);
+	png_read_end(png, info);
+	fclose(file);
+	png_destroy_read_struct(&png, &info, NULL);
+	free(rows);
+
+	if(rowBytes != width * 4)
+	{
+		free(pixels);
+		return -1;
+	}
+
+	m_width = static_cast<int>(width);
+	m_height = static_cast<int>(height);
+	glGenTextures(1, &m_texture);
+	glBindTexture(GL_TEXTURE_2D, m_texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 0,
+		GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	free(pixels);
+
+	if(glGetError() != GL_NO_ERROR)
+	{
+		glDeleteTextures(1, &m_texture);
+		m_texture = static_cast<unsigned int>(-1);
+		return -1;
+	}
+	return 0;
+#endif
 }
 
 
@@ -236,4 +357,3 @@ void RudeTexture::SetActive()
 	
 	
 }
-

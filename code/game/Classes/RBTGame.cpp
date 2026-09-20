@@ -1712,16 +1712,22 @@ void RBTGame::RenderGuide(float aspect)
 			(int) m_holePositionScreenSpace.y() - kHoleIndicatorOffset - 9 + kHoleIndicatorOverlapOffset);
 	}
 
-	m_holeIndicatorButton.Render();
-	m_guideIndicatorButton.Render();
-	
-	m_holeHeightText.Render();
-
-	if(m_state == kStatePositionSwing2 ||
-		m_state == kStatePositionSwing3)
+	if(m_holePositionScreenSpace.z() <= 1.0f && m_holePositionScreenSpace.z() >= -1.0f)
 	{
-		m_guidePowerText->SetValue(m_placementGuidePower);
-		m_guidePowerText->Render();
+		m_holeIndicatorButton.Render();
+		m_holeHeightText.Render();
+	}
+	
+	if(m_guidePositionScreenSpace.z() <= 1.0f && m_guidePositionScreenSpace.z() >= -1.0f)
+	{
+		m_guideIndicatorButton.Render();
+
+		if(m_state == kStatePositionSwing2 ||
+			m_state == kStatePositionSwing3)
+		{
+			m_guidePowerText->SetValue(m_placementGuidePower);
+			m_guidePowerText->Render();
+		}
 	}
 
 

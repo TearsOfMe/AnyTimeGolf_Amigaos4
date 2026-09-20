@@ -241,6 +241,29 @@ typedef unsigned long long u64;
 
 #endif // RUDE_MACOS
 
+#ifdef RUDE_AMIGAOS4
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdarg.h>
+#include <math.h>
+#include <time.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_opengl.h>
+
+#define RUDE_OGL
+#define TCHAR char
+#define _stprintf sprintf
+#define _tcscat strcat
+#define _tcscpy strcpy
+#define _tcslen strlen
+#define _T(a) a
+
+typedef unsigned long long u64;
+
+#endif // RUDE_AMIGAOS4
+
 //  ASSERTS...
 #ifndef __RUDE__DEBUG
 #define __RUDE__DEBUG

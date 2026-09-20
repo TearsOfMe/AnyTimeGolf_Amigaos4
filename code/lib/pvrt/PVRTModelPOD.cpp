@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <type_traits>
 //#include <time.h>
 
 #include "PVRTGlobal.h"
@@ -216,7 +217,37 @@ public:
 	template <typename T>
 	bool Read(T &n)
 	{
-		return Read(&n, sizeof(T));
+		unsigned char bytes[sizeof(T)];
+		if(!Read(bytes, sizeof(T)))
+			return false;
+#if defined(RUDE_AMIGAOS4)
+		/* Swap each element: if total size is a multiple of 4, swap as
+		   4-byte units (float, int, float[3], float[7], …); else if a
+		   multiple of 2, swap as 2-byte units (short, unsigned short). */
+		{
+			size_t elemSize = 0;
+			if(sizeof(T) >= 4 && sizeof(T) % 4 == 0)
+				elemSize = 4;
+			else if(sizeof(T) >= 2 && sizeof(T) % 2 == 0)
+				elemSize = 2;
+			if(elemSize > 0)
+			{
+				for(size_t offset = 0; offset < sizeof(T);
+					offset += elemSize)
+				{
+					for(size_t i = 0; i < elemSize / 2; ++i)
+					{
+						unsigned char tmp = bytes[offset + i];
+						bytes[offset + i] =
+							bytes[offset + elemSize - 1 - i];
+						bytes[offset + elemSize - 1 - i] = tmp;
+					}
+				}
+			}
+		}
+#endif
+		memcpy(&n, bytes, sizeof(T));
+		return true;
 	}
 
 	bool ReadMarker(unsigned int &nName, unsigned int &nLen);
@@ -226,15 +257,35 @@ public:
 	{
 		if(!SafeAlloc(lpBuffer, dwNumberOfBytesToRead))
 			return false;
-		return Read(lpBuffer, dwNumberOfBytesToRead);
+		if(!Read(lpBuffer, dwNumberOfBytesToRead))
+			return false;
+#if defined(RUDE_AMIGAOS4)
+		if(std::is_arithmetic<T>::value &&
+		   (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8))
+		{
+			for(size_t offset = 0; offset + sizeof(T) <= dwNumberOfBytesToRead;
+				offset += sizeof(T))
+			{
+				unsigned char *bytes =
+					reinterpret_cast<unsigned char *>(lpBuffer) + offset;
+				for(size_t i = 0; i < sizeof(T) / 2; ++i)
+				{
+					unsigned char value = bytes[i];
+					bytes[i] = bytes[sizeof(T) - 1 - i];
+					bytes[sizeof(T) - 1 - i] = value;
+				}
+			}
+		}
+#endif
+		return true;
 	}
 };
 
 bool CSource::ReadMarker(unsigned int &nName, unsigned int &nLen)
 {
-	if(!Read(&nName, sizeof(nName)))
+	if(!Read(nName))
 		return false;
-	if(!Read(&nLen, sizeof(nLen)))
+	if(!Read(nLen))
 		return false;
 	return true;
 }
@@ -634,7 +685,40 @@ static bool ReadCPODData(
 		case ePODFileDataType:	if(!src.Read(s.eType)) return false;					break;
 		case ePODFileN:			if(!src.Read(s.n)) return false;						break;
 		case ePODFileStride:	if(!src.Read(s.nStride)) return false;					break;
-		case ePODFileData:		if(bValidData) { if(!src.ReadAfterAlloc(s.pData, nLen)) return false; } else { if(!src.Read(s.pData)) return false; }	break;
+		case ePODFileData:
+			if(bValidData)
+			{
+				if(!src.ReadAfterAlloc(s.pData, nLen))
+					return false;
+#if defined(RUDE_AMIGAOS4)
+				if(s.eType == EPODDataFloat || s.eType == EPODDataInt ||
+				   s.eType == EPODDataFixed16_16 ||
+				   s.eType == EPODDataUnsignedShort ||
+				   s.eType == EPODDataShort ||
+				   s.eType == EPODDataShortNorm)
+				{
+					const size_t elementSize =
+						(s.eType == EPODDataUnsignedShort ||
+						 s.eType == EPODDataShort ||
+						 s.eType == EPODDataShortNorm) ? 2 : 4;
+					unsigned char *bytes =
+						static_cast<unsigned char *>(s.pData);
+					for(size_t i = 0; i + elementSize <= nLen;
+						i += elementSize)
+					{
+						for(size_t j = 0; j < elementSize / 2; ++j)
+						{
+							unsigned char value = bytes[i + j];
+							bytes[i + j] = bytes[i + elementSize - 1 - j];
+							bytes[i + elementSize - 1 - j] = value;
+						}
+					}
+				}
+#endif
+			}
+			else if(!src.Read(s.pData))
+				return false;
+			break;
 
 		default:
 			if(!src.Skip(nLen)) return false;
@@ -815,6 +899,70 @@ static bool ReadTexture(
 	return false;
 }
 
+#if defined(RUDE_AMIGAOS4)
+/*!***************************************************************************
+ @Function		SwapInterleavedElements
+ @Input			pInterleaved	Pointer to interleaved vertex data
+ @Input			nNumVertex		Number of vertices
+ @Input			attr			CPODData describing one attribute channel
+ @Description	Byte-swaps one attribute channel inside an interleaved vertex
+				buffer from little-endian to native (big-endian) byte order.
+*****************************************************************************/
+static void SwapInterleavedElements(unsigned char *pInterleaved,
+	unsigned int nNumVertex, const CPODData &attr)
+{
+	if(attr.n == 0 || attr.nStride == 0)
+		return;
+	size_t elemSize = 0;
+	switch(attr.eType)
+	{
+		case EPODDataFloat:
+		case EPODDataInt:
+		case EPODDataFixed16_16:
+			elemSize = 4;
+			break;
+		case EPODDataUnsignedShort:
+		case EPODDataShort:
+		case EPODDataShortNorm:
+			elemSize = 2;
+			break;
+		default:
+			return; /* byte-sized types (RGBA, UByte, Byte) – no swap */
+	}
+	for(unsigned int v = 0; v < nNumVertex; ++v)
+	{
+		unsigned char *base = pInterleaved +
+			(long)attr.pData + (size_t)v * attr.nStride;
+		for(unsigned int c = 0; c < attr.n; ++c)
+		{
+			unsigned char *elem = base + c * elemSize;
+			for(size_t i = 0; i < elemSize / 2; ++i)
+			{
+				unsigned char tmp = elem[i];
+				elem[i] = elem[elemSize - 1 - i];
+				elem[elemSize - 1 - i] = tmp;
+			}
+		}
+	}
+}
+
+static void SwapMeshInterleaved(SPODMesh &mesh)
+{
+	if(mesh.pInterleaved == NULL || mesh.nNumVertex == 0)
+		return;
+	SwapInterleavedElements(mesh.pInterleaved, mesh.nNumVertex, mesh.sVertex);
+	SwapInterleavedElements(mesh.pInterleaved, mesh.nNumVertex, mesh.sNormals);
+	SwapInterleavedElements(mesh.pInterleaved, mesh.nNumVertex, mesh.sTangents);
+	SwapInterleavedElements(mesh.pInterleaved, mesh.nNumVertex, mesh.sBinormals);
+	for(unsigned int i = 0; i < mesh.nNumUVW; ++i)
+		SwapInterleavedElements(mesh.pInterleaved, mesh.nNumVertex,
+			mesh.psUVW[i]);
+	/* VtxColours (EPODDataRGBA) are individual bytes – no swap needed */
+	SwapInterleavedElements(mesh.pInterleaved, mesh.nNumVertex, mesh.sBoneIdx);
+	SwapInterleavedElements(mesh.pInterleaved, mesh.nNumVertex, mesh.sBoneWeight);
+}
+#endif
+
 static bool ReadScene(
 	SPODScene	&s,
 	CSource		&src)
@@ -850,7 +998,13 @@ static bool ReadScene(
 		case ePODFileCamera:	if(!ReadCamera(s.pCamera[nCameras++], src)) return false;		break;
 		case ePODFileLight:		if(!ReadLight(s.pLight[nLights++], src)) return false;			break;
 		case ePODFileMaterial:	if(!ReadMaterial(s.pMaterial[nMaterials++], src)) return false;	break;
-		case ePODFileMesh:		if(!ReadMesh(s.pMesh[nMeshes++], src)) return false;			break;
+		case ePODFileMesh:
+			if(!ReadMesh(s.pMesh[nMeshes], src)) return false;
+#if defined(RUDE_AMIGAOS4)
+			SwapMeshInterleaved(s.pMesh[nMeshes]);
+#endif
+			++nMeshes;
+			break;
 		case ePODFileNode:		if(!ReadNode(s.pNode[nNodes++], src)) return false;				break;
 		case ePODFileTexture:	if(!ReadTexture(s.pTexture[nTextures++], src)) return false;	break;
 

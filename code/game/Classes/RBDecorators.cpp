@@ -140,10 +140,14 @@ void RBDecorator::Render()
 		
 		glGetFloatv(GL_MODELVIEW_MATRIX, M);
 		
-		M[0] = 1.0;
+		M[0] = 1.0f;
 		M[1] = 0.0f;
 		M[2] = 0.0f;
 		
+		M[4] = 0.0f;
+		M[5] = 1.0f;
+		M[6] = 0.0f;
+
 		M[8] = 0.0f;
 		M[9] = 0.0f;
 		M[10] = 1.0f;

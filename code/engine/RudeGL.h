@@ -90,6 +90,10 @@ public:
 	void SetDeviceWidth(float w) { m_deviceWidth = w; }
 	float GetDeviceWidth() { return m_deviceWidth; }
 
+	void SetWindowSize(int w, int h) { m_windowWidth = (float) w; m_windowHeight = (float) h; }
+	float GetWindowWidth() const { return m_windowWidth; }
+	float GetWindowHeight() const { return m_windowHeight; }
+
 private:
 	
 	float m_viewmat[16];
@@ -110,6 +114,8 @@ private:
 	bool m_upsideDown;
 	float m_deviceHeight;
 	float m_deviceWidth;
+	float m_windowHeight;
+	float m_windowWidth;
 	
 };
 

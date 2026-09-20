@@ -50,6 +50,9 @@ int RudeTextureManager::GetTextureID(const char *name)
 
 int RudeTextureManager::LoadTextureFromPVRTFile(const char *name)
 {
+	RUDE_ASSERT(name, "Invalid texture name");
+	if(name == 0)
+		return -1;
 	// check to make sure its not already loaded
 	int texid = GetTextureID(name);
 	if(texid >= 0)
@@ -73,6 +76,9 @@ int RudeTextureManager::LoadTextureFromPVRTFile(const char *name)
 
 int RudeTextureManager::LoadTextureFromPVRTPointer(const char *name, const void *data)
 {
+	RUDE_ASSERT(name && data, "Invalid embedded texture");
+	if(name == 0 || data == 0)
+		return -1;
 	// check to make sure its not already loaded
 	int texid = GetTextureID(name);
 	if(texid >= 0)
@@ -125,7 +131,10 @@ int RudeTextureManager::ReplaceTextureFromPNGFile(int texid, const char *name)
 	RUDE_ASSERT(((unsigned int) texid) < m_textures.size(), "Invalid id");
 	RUDE_ASSERT(m_textures[texid], "Invalid texture");
 	
-	m_textures[texid]->LoadFromPNG(name);
+	int result = m_textures[texid]->LoadFromPNG(name);
+	RUDE_ASSERT(result >= 0, "Unable to replace texture (%s)", name);
+	if(result < 0)
+		return result;
 	
 	return texid;
 	
@@ -158,6 +167,5 @@ int RudeTextureManager::InsertTexture(RudeTexture *texture)
 	m_textures.push_back(texture);	
 	return m_textures.size() - 1;
 }
-
 
 

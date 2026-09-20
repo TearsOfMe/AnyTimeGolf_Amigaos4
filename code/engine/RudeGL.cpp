@@ -34,6 +34,8 @@ RudeGL::RudeGL()
 , m_upsideDown(false)
 , m_deviceHeight(480.0f)
 , m_deviceWidth(320.0f)
+, m_windowHeight(1024.0f)
+, m_windowWidth(768.0f)
 {
 	for(int i = 0; i < kNumRudeGLEnableOptions; i++)
 		m_enables[i] = false;
@@ -84,7 +86,25 @@ void RudeGL::SetViewport(int top, int left, int bottom, int right)
 	float screenx = right - left;
 	float screeny = bottom - top;
 	
+#if defined(RUDE_AMIGAOS4)
+	if(m_windowWidth > 0.0f && m_windowHeight > 0.0f &&
+	   m_deviceWidth > 0.0f && m_deviceHeight > 0.0f)
+	{
+		float scaleX = m_windowWidth / m_deviceWidth;
+		float scaleY = m_windowHeight / m_deviceHeight;
+		GLint vx = (GLint)(m_viewport.m_left * scaleX);
+		GLint vy = (GLint)((m_deviceHeight - m_viewport.m_bottom) * scaleY);
+		GLsizei vw = (GLsizei)(screenx * scaleX);
+		GLsizei vh = (GLsizei)(screeny * scaleY);
+		glViewport(vx, vy, vw, vh);
+	}
+	else
+	{
+		glViewport(m_viewport.m_left, m_deviceHeight - m_viewport.m_bottom, screenx, screeny);
+	}
+#else
 	glViewport(m_viewport.m_left, m_deviceHeight - m_viewport.m_bottom, screenx, screeny);
+#endif
 #endif
 }
 
@@ -298,6 +318,14 @@ btVector3 RudeGL::Project(const btVector3 &point)
 	
 	btVector3 rv;
 	
+	if(result[3] <= 0.0001f)
+	{
+		rv.setX(-10000.0f);
+		rv.setY(-10000.0f);
+		rv.setZ(2.0f);
+		return rv;
+	}
+
 	if(m_landscape == false)
 	{
 		if(m_upsideDown == false)
