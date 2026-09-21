@@ -66,42 +66,42 @@ void RBDecorator::SetSize(float size)
 	m_verts[0].m_pos[1] = 0;
 	m_verts[0].m_pos[2] = 0;
 	m_verts[0].m_uv[0] = 0;
-	m_verts[0].m_uv[1] = 0;
+	m_verts[0].m_uv[1] = 1 - uvoffset;
 	
 	// bottom right
 	m_verts[1].m_pos[0] = hsize;
 	m_verts[1].m_pos[1] = 0;
 	m_verts[1].m_pos[2] = 0;
 	m_verts[1].m_uv[0] = 1 - uvoffset;
-	m_verts[1].m_uv[1] = 0;
+	m_verts[1].m_uv[1] = 1 - uvoffset;
 	
 	// top left
 	m_verts[2].m_pos[0] = -hsize;
 	m_verts[2].m_pos[1] = size;
 	m_verts[2].m_pos[2] = 0;
 	m_verts[2].m_uv[0] = 0;
-	m_verts[2].m_uv[1] = 1 - uvoffset;
+	m_verts[2].m_uv[1] = 0;
 	
 	// top left
 	m_verts[3].m_pos[0] = -hsize;
 	m_verts[3].m_pos[1] = size;
 	m_verts[3].m_pos[2] = 0;
 	m_verts[3].m_uv[0] = 0;
-	m_verts[3].m_uv[1] = 1 - uvoffset;
+	m_verts[3].m_uv[1] = 0;
 	
 	// bottom right
 	m_verts[4].m_pos[0] = hsize;
 	m_verts[4].m_pos[1] = 0;
 	m_verts[4].m_pos[2] = 0;
 	m_verts[4].m_uv[0] = 1 - uvoffset;
-	m_verts[4].m_uv[1] = 0;
+	m_verts[4].m_uv[1] = 1 - uvoffset;
 	
 	// top right
 	m_verts[5].m_pos[0] = hsize;
 	m_verts[5].m_pos[1] = size;
 	m_verts[5].m_pos[2] = 0;
 	m_verts[5].m_uv[0] = 1 - uvoffset;
-	m_verts[5].m_uv[1] = 1 - uvoffset;
+	m_verts[5].m_uv[1] = 0;
 }
 
 bool RBDecorator::AddInstance(float x, float y, float z)
