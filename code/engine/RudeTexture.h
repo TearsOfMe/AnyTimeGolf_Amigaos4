@@ -9,7 +9,7 @@
 #ifndef __H_RudeTexture
 #define __H_RudeTexture
 
-const int kNameLen = 32;
+const int kNameLen = 64;
 
 class RudeTexture {
 

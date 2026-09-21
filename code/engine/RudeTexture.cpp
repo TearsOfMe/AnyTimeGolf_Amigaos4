@@ -59,18 +59,22 @@ int RudeTexture::LoadFromPVRTFile(const char *name)
 	strncpy(pngbasename, name, kNameLen - 1);
 	pngbasename[kNameLen - 1] = '\0';
 	char *ext = strrchr(pngbasename, '.');
-	if(ext != NULL && (strcasecmp(ext, ".pvr") == 0 || strcasecmp(ext, ".bmp") == 0))
+	if(ext != NULL && (strcasecmp(ext, ".pvr") == 0 || strcasecmp(ext, ".bmp") == 0 || strcasecmp(ext, ".tga") == 0 || strcasecmp(ext, ".png") == 0))
 		*ext = '\0';
 
 	char pngfilename[kNameLen + 4];
 	snprintf(pngfilename, sizeof(pngfilename), "%s.png", pngbasename);
 
 	char pngfilepath[512];
-	if(RudeFileGetFile(pngfilename, pngfilepath, sizeof(pngfilepath), false))
+	if(RudeFileGetFile(pngfilename, pngfilepath, sizeof(pngfilepath), true))
 	{
 		int res = LoadFromPNG(pngbasename, true);
 		if(res == 0)
+		{
+			strncpy(m_name, name, kNameLen - 1);
+			m_name[kNameLen - 1] = '\0';
 			return 0;
+		}
 	}
 
 	strncpy(m_name, name, kNameLen - 1);
@@ -265,7 +269,7 @@ LoadFromPNG_URLFail:
 
 #if defined(RUDE_AMIGAOS4)
 	char filepath[512];
-	if(!RudeFileGetFile(filename, filepath, sizeof(filepath), false))
+	if(!RudeFileGetFile(filename, filepath, sizeof(filepath), true))
 		return -1;
 
 	FILE *file = fopen(filepath, "rb");
@@ -346,6 +350,7 @@ LoadFromPNG_URLFail:
 
 	m_width = static_cast<int>(width);
 	m_height = static_cast<int>(height);
+	while(glGetError() != GL_NO_ERROR);
 	glGenTextures(1, &m_texture);
 	glBindTexture(GL_TEXTURE_2D, m_texture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 0,
@@ -416,9 +421,6 @@ LoadFromPNG_URLFail:
 		{
 			glTexParameterf(GL_TEXTURE_2D, 0x84FE /* GL_TEXTURE_MAX_ANISOTROPY_EXT */, s_maxAniso);
 		}
-
-		// Negative LOD bias keeps textures crisper and clearer
-		glTexParameterf(GL_TEXTURE_2D, 0x8501 /* GL_TEXTURE_LOD_BIAS */, -0.5f);
 	}
 	else
 	{
@@ -427,11 +429,10 @@ LoadFromPNG_URLFail:
 	}
 	free(pixels);
 
-	if(glGetError() != GL_NO_ERROR)
+	GLenum err = glGetError();
+	if(err != GL_NO_ERROR)
 	{
-		glDeleteTextures(1, &m_texture);
-		m_texture = static_cast<unsigned int>(-1);
-		return -1;
+		RUDE_REPORT("LoadFromPNG notice: glGetError()=0x%x for %s\n", err, filename);
 	}
 	return 0;
 #endif

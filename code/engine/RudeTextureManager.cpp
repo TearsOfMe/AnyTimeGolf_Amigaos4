@@ -7,6 +7,8 @@
  */
 
 #include "RudeTextureManager.h"
+#include <string.h>
+#include <strings.h>
 
 
 
@@ -31,6 +33,9 @@ RudeTextureManager::~RudeTextureManager()
 
 int RudeTextureManager::GetTextureID(const char *name)
 {
+	if(name == NULL || name[0] == '\0')
+		return -1;
+
 	unsigned int s = m_textures.size();
 	
 	for(unsigned int i = 0; i < s; i++)
@@ -38,8 +43,18 @@ int RudeTextureManager::GetTextureID(const char *name)
 		if(m_textures[i])
 		{
 			const char *texname = m_textures[i]->GetName();
+			if(texname == NULL)
+				continue;
 			
-			if(strcmp(name, texname) == 0)
+			if(strcasecmp(name, texname) == 0)
+				return i;
+
+			char b1[64], b2[64];
+			strncpy(b1, name, sizeof(b1)-1); b1[sizeof(b1)-1] = '\0';
+			strncpy(b2, texname, sizeof(b2)-1); b2[sizeof(b2)-1] = '\0';
+			char *e1 = strrchr(b1, '.'); if(e1) *e1 = '\0';
+			char *e2 = strrchr(b2, '.'); if(e2) *e2 = '\0';
+			if(strcasecmp(b1, b2) == 0)
 				return i;
 		}
 	}

@@ -47,7 +47,11 @@ RBDecorator::RBDecorator()
 void RBDecorator::SetTexture(const char *file)
 {
 	m_textureid = RudeTextureManager::GetInstance()->LoadTextureFromPVRTFile(file);
-	m_texturesize = RudeTextureManager::GetInstance()->GetTexture(m_textureid)->GetHeight();
+	RudeTexture *tex = RudeTextureManager::GetInstance()->GetTexture(m_textureid);
+	if(tex)
+		m_texturesize = tex->GetHeight();
+	else
+		m_texturesize = 128;
 }
 
 void RBDecorator::SetSize(float size)

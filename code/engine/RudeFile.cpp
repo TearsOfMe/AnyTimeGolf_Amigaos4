@@ -63,7 +63,7 @@ bool RudeFileGetFile(const char *filename, char *buffer, int bufsize, bool canfa
 #ifdef RUDE_AMIGAOS4
 	if(filename == NULL || buffer == NULL || bufsize <= 0)
 		return false;
-	const char *formats[] = {"PROGDIR:data/%s", "data/%s"};
+	const char *formats[] = {"PROGDIR:data/%s", "data/%s", "%s", "PROGDIR:%s"};
 	for(unsigned int i = 0; i < sizeof(formats) / sizeof(formats[0]); ++i)
 	{
 		int written = snprintf(buffer, (size_t)bufsize, formats[i], filename);
