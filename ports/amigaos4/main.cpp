@@ -13,12 +13,18 @@
 #include "RudeUnitTest.h"
 #include "RudeTweaker.h"
 
+#ifdef __amigaos4__
+static const char* __attribute__((used)) g_stack_cookie = "$STACK:2097152\n";
+#endif
+
 namespace {
 constexpr int kLogicalWidth = 768;
 constexpr int kLogicalHeight = 1024;
 
 void setGLAttributes(bool enableMSAA)
 {
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
@@ -126,6 +132,22 @@ int main(int argc, char **argv)
             windowWidth = (windowHeight * kLogicalWidth) / kLogicalHeight;
         }
     }
+    const char *envW = std::getenv("GOLF_WIDTH");
+    const char *envH = std::getenv("GOLF_HEIGHT");
+    if (envW && envH) {
+        int w = std::atoi(envW);
+        int h = std::atoi(envH);
+        if (w >= 320 && h >= 240) {
+            windowWidth = w;
+            windowHeight = h;
+        }
+    }
+
+    Uint32 winFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
+    const char *envFS = std::getenv("GOLF_FULLSCREEN");
+    if (envFS && (std::strcmp(envFS, "1") == 0 || std::strcmp(envFS, "true") == 0)) {
+        winFlags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+    }
 
     SDL_Window *window = SDL_CreateWindow(
         "Anytime Golf: Magic Touch",
@@ -133,7 +155,7 @@ int main(int argc, char **argv)
         SDL_WINDOWPOS_UNDEFINED,
         windowWidth,
         windowHeight,
-        SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+        winFlags);
     if (window == nullptr) {
         std::fprintf(stderr, "SDL_CreateWindow failed: %s\n", SDL_GetError());
         IMG_Quit();

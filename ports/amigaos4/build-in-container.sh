@@ -76,7 +76,7 @@ echo "LINK golf_amigaos4"
     $(find "$OBJ" -maxdepth 1 -name '*.o' ! -name '*.bullet.o' | sort) \
     $(find "$OBJ" -maxdepth 1 -name '*.bullet.o' | sort) \
     -L"$SDK/local/newlib/lib" \
-    -lSDL2_image -lSDL2 -lGL -lGLU \
+    -lSDL2_image -lSDL2_gl4es -lgl4es -lGLU_gl4es \
     -ltiff -lwebpdemux -lwebp -lwebpmux -lsharpyuv \
     -ljpeg -lpng -lz -lbz2 -lm \
     -L/opt/ppc-amigaos/lib/gcc/ppc-amigaos/11.5.0/newlib \

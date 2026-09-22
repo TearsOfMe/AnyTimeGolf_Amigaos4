@@ -8,7 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(SDL2 CONFIG REQUIRED)
 find_package(SDL2_image CONFIG REQUIRED)
-find_package(OpenGL REQUIRED)
+
 find_package(Bullet REQUIRED)
 
 file(GLOB ENGINE_SOURCES CONFIGURE_DEPENDS
@@ -44,6 +44,7 @@ target_compile_definitions(golf_amigaos4 PRIVATE
 )
 
 target_include_directories(golf_amigaos4 PRIVATE
+    "${CMAKE_CURRENT_LIST_DIR}/compat"
     "${CMAKE_CURRENT_LIST_DIR}/../../code/engine"
     "${CMAKE_CURRENT_LIST_DIR}/../../code/game/Classes"
     "${CMAKE_CURRENT_LIST_DIR}/../../code/lib/bullet/src"
@@ -53,10 +54,10 @@ target_include_directories(golf_amigaos4 PRIVATE
 )
 
 target_link_libraries(golf_amigaos4 PRIVATE
-    SDL2::SDL2
+    SDL2_gl4es
     SDL2_image::SDL2_image
-    OpenGL::GL
-    OpenGL::GLU
+    gl4es
+    GLU_gl4es
     Bullet::Dynamics
     Bullet::Collision
     Bullet::LinearMath

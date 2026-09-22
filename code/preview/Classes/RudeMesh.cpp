@@ -1,9 +1,8 @@
 /*
  *  RudeMesh.cpp
- *  golf
  *
- *  Created by Robert Rose on 9/4/08.
- *  Copyright 2008 Bork 3D LLC. All rights reserved.
+ *  Bork3D Game Engine
+ *  Copyright (c) 2009 Bork 3D LLC. All rights reserved.
  *
  */
 
@@ -12,9 +11,6 @@
 #include "RudeTextureManager.h"
 #include "RudeFile.h"
 #include "RudeDebug.h"
-
-#include <OpenGLES/ES1/gl.h>
-#include <OpenGLES/ES1/glext.h>
 
 
 
@@ -41,10 +37,11 @@ int RudeMesh::Load(const char *name)
 	RUDE_REPORT("RudeMesh::Load %s\n", name);
 	
 	char filename[64];
-	sprintf(filename, "%s.POD", name);
+	snprintf(filename, sizeof(filename), "%s.POD", name);
 	
 	char modelfile[512];
-	RudeFileGetFile(filename, modelfile, 512);
+	if(!RudeFileGetFile(filename, modelfile, sizeof(modelfile), false))
+		return -1;
 	
 	int result = m_model.ReadFromFile(modelfile, 0, 0);
 	
@@ -54,17 +51,16 @@ int RudeMesh::Load(const char *name)
 		return -1;
 	
 	RUDE_ASSERT(m_model.nNumTexture < kMaxTextures, "Too many textures in model");
-	for(int i = 0; i < m_model.nNumTexture; i++)
+	for(unsigned int i = 0; i < m_model.nNumTexture; i++)
 	{
 		SPODTexture *texture = &m_model.pTexture[i];
 		RUDE_ASSERT(texture, "Invalid texture in model");
 		
 		char texturename[64];
-		sprintf(texturename, "%s", texture->pszName);
-		int texturenamelen = strlen(texturename);
-		
-		// cut off the last 4 chars
-		texturename[texturenamelen-4] = '\0';
+		snprintf(texturename, sizeof(texturename), "%s", texture->pszName);
+		char *extension = strrchr(texturename, '.');
+		if(extension != NULL)
+			*extension = '\0';
 		
 		m_textures[i] = RudeTextureManager::GetInstance()->LoadTextureFromPVRTFile(texturename);
 		RUDE_ASSERT(m_textures[i] >= 0, "Could not load texture");
@@ -73,7 +69,7 @@ int RudeMesh::Load(const char *name)
 	
 	// make sure we have at least one renderable node
 	bool foundRenderable = false;
-	for(int i = 0; i < m_model.nNumNode; i++)
+	for(unsigned int i = 0; i < m_model.nNumNode; i++)
 	{
 		SPODNode *node = &m_model.pNode[i];
 		
@@ -89,38 +85,6 @@ int RudeMesh::Load(const char *name)
 	
 	RUDE_ASSERT(foundRenderable, "Didn't find any renderable meshes in %s", name);
 	
-	// flip endianess of colors stored in meshes
-	for(int i = 0; i < m_model.nNumMesh; i++)
-	{
-		SPODMesh *mesh = &m_model.pMesh[i];
-		
-		RUDE_ASSERT(mesh->pInterleaved, "Mesh data must be interleaved");
-			
-		if((mesh->sVtxColours.n > 0))
-		{
-			RUDE_ASSERT(mesh->sVtxColours.eType == EPODDataRGBA, "Vertex colors must be in RGBA format");
-			
-			if(mesh->sVtxColours.eType == EPODDataRGBA)
-			{
-				unsigned char *c = (mesh->pInterleaved + (long)mesh->sVtxColours.pData);
-				
-				for(int j = 0; j < mesh->nNumVertex; j++)
-				{
-					unsigned int *cc = (unsigned int *) c;
-					unsigned int b = *cc & 0x000000FF;
-					unsigned int g = (*cc & 0x0000FF00) >> 8;
-					unsigned int r = (*cc & 0x00FF0000) >> 16;
-					//unsigned int a = (*cc & 0xFF000000) >> 24;
-					b = g = r;
-					
-					*cc = 0xFF000000 | (b << 16) | (g << 8) | r;
-					
-					c += mesh->sVtxColours.nStride;
-				}
-			}
-		}
-	}
-	
 	return 0;
 	
 }
@@ -129,17 +93,16 @@ void RudeMesh::AddTextureOverride(const char *oldTexture, const char *newTexture
 {
 	bool found = false;
 	
-	for(int i = 0; i < m_model.nNumTexture; i++)
+	for(unsigned int i = 0; i < m_model.nNumTexture; i++)
 	{
 		SPODTexture *texture = &m_model.pTexture[i];
 		RUDE_ASSERT(texture, "Invalid texture in model");
 		
 		char texturename[64];
-		sprintf(texturename, "%s", texture->pszName);
-		int texturenamelen = strlen(texturename);
-		
-		// cut off the last 4 chars
-		texturename[texturenamelen-4] = '\0';
+		snprintf(texturename, sizeof(texturename), "%s", texture->pszName);
+		char *extension = strrchr(texturename, '.');
+		if(extension != NULL)
+			*extension = '\0';
 		
 		if(strcmp(oldTexture, texturename) == 0)
 		{
@@ -162,7 +125,7 @@ void RudeMesh::SetColorOverride(int node, const char *colordata)
 void RudeMesh::EnableModel(int n, bool enable)
 {
 	bool found = false;
-	for(int i = 0; i < m_model.nNumNode; i++)
+	for(unsigned int i = 0; i < m_model.nNumNode; i++)
 	{
 		SPODNode *node = &m_model.pNode[i];
 		
@@ -201,7 +164,7 @@ void RudeMesh::Render()
 	
 	//glScalef(m_scale.x(), m_scale.y(), m_scale.z());
 	
-	for(int i = 0; i < m_model.nNumNode; i++)
+	for(unsigned int i = 0; i < m_model.nNumNode; i++)
 	{
 		SPODNode *node = &m_model.pNode[i];
 		
@@ -224,14 +187,12 @@ void RudeMesh::Render()
 		
 		unsigned short *indices	= (unsigned short*) mesh->sFaces.pData;
 		
-		if(mesh->sVertex.eType == EPODDataFixed16_16)
-			glVertexPointer(3, GL_FIXED, mesh->sVertex.nStride, mesh->pInterleaved + (long)mesh->sVertex.pData);
-		else if(mesh->sVertex.eType == EPODDataShortNorm)
+		if(mesh->sVertex.eType == EPODDataShortNorm)
 		{
 			float s = 1.0f / 1000.0f;
 			glMatrixMode(GL_MODELVIEW);
 			glScalef(s, s, s);
-			glVertexPointer(3, GL_UNSIGNED_SHORT, mesh->sVertex.nStride, mesh->pInterleaved + (long)mesh->sVertex.pData);
+			glVertexPointer(3, GL_SHORT, mesh->sVertex.nStride, mesh->pInterleaved + (long)mesh->sVertex.pData);
 		}
 		else
 			glVertexPointer(3, GL_FLOAT, mesh->sVertex.nStride, mesh->pInterleaved + (long)mesh->sVertex.pData);
@@ -251,7 +212,10 @@ void RudeMesh::Render()
 				glColorPointer(4, GL_UNSIGNED_BYTE, mesh->sVtxColours.nStride, mesh->pInterleaved + (long)mesh->sVtxColours.pData);
 			}
 			else
+			{
 				RGL.EnableClient(kColorArray, false);
+				glColor4f(1.0, 1.0, 1.0, 1.0);
+			}
 		}
 		
 		glDrawElements(GL_TRIANGLES, mesh->nNumFaces*3, GL_UNSIGNED_SHORT, indices);
@@ -289,15 +253,21 @@ void RudeMesh::Render()
 		
 		if(mesh->sVertex.eType == EPODDataFixed16_16)
 			glVertexPointer(3, GL_FIXED, mesh->sVertex.nStride, mesh->pInterleaved + (long)mesh->sVertex.pData);
-		else if(mesh->sVertex.eType == EPODDataShortNorm)
+		else if(mesh->sVertex.eType == EPODDataShortNorm || mesh->sVertex.eType == EPODDataShort)
 		{
-			float s = 1.0f / 1000.0f;
-			glMatrixMode(GL_MODELVIEW);
-			glScalef(s, s, s);
-			glVertexPointer(3, GL_UNSIGNED_SHORT, mesh->sVertex.nStride, mesh->pInterleaved + (long)mesh->sVertex.pData);
+			if(mesh->sVertex.eType == EPODDataShortNorm) {
+				float s = 1.0f / 1000.0f;
+				glMatrixMode(GL_MODELVIEW);
+				glScalef(s, s, s);
+			}
+			glVertexPointer(3, GL_SHORT, mesh->sVertex.nStride, mesh->pInterleaved + (long)mesh->sVertex.pData);
 		}
-		else
+		else if(mesh->sVertex.eType == EPODDataFloat)
 			glVertexPointer(3, GL_FLOAT, mesh->sVertex.nStride, mesh->pInterleaved + (long)mesh->sVertex.pData);
+		else {
+			RUDE_REPORT("WARNING: Unknown vertex type %d! Defaulting to GL_FLOAT\n", mesh->sVertex.eType);
+			glVertexPointer(3, GL_FLOAT, mesh->sVertex.nStride, mesh->pInterleaved + (long)mesh->sVertex.pData);
+		}
 		
 		glTexCoordPointer(2, GL_FLOAT, mesh->psUVW->nStride, mesh->pInterleaved + (long)mesh->psUVW->pData);
 		
@@ -320,4 +290,3 @@ void RudeMesh::Render()
 #endif
 		
 }
-

@@ -136,9 +136,6 @@ void RBDecorator::Render()
 	RudeTextureManager::GetInstance()->SetTexture(m_textureid);
 	
 	float M[16];
-	float halfw = RGL.GetHalfWidth();
-	float halfh = RGL.GetHalfHeight();
-	float hsize = m_size * 0.5f;
 	
 	for(int i = 0; i < m_numInstances; i++)
 	{
@@ -149,38 +146,22 @@ void RBDecorator::Render()
 		
 		// In eye space, the camera looks down the negative Z axis.
 		// Near clipping plane is at -4.0f, far clipping plane is at -2500.0f.
-		// Any tree behind the near plane (M[14] >= -4.0f) or behind the camera (M[14] >= 0.0f)
-		// has W_clip <= 0, which Mesa projects upside-down directly into the sky!
-		// Cull all trees behind or too close to the camera, or beyond the far plane:
+		// Cull any trees behind or too close to the near plane (prevents upside-down projection into sky):
 		if(M[14] >= -4.0f || M[14] <= -2500.0f)
 		{
 			glPopMatrix();
 			continue;
 		}
 
-		// View frustum culling on X and Y
-		float dist = -M[14];
-		float frustum_scale = dist * 0.25f; // dist / near_plane (4.0f)
-		float bound_x = halfw * frustum_scale + hsize;
-		float bound_y = halfh * frustum_scale + m_size;
-
-		if(M[12] < -bound_x || M[12] > bound_x || M[13] < -bound_y || M[13] > bound_y)
+		// Cylindrical billboard: cancel camera rotation around X and Z (columns 0 and 2),
+		// but preserve column 1 (Y axis) so trees stay planted vertically on the terrain.
+		for(int col = 0; col < 3; col += 2)
 		{
-			glPopMatrix();
-			continue;
+			for(int row = 0; row < 3; row++)
+			{
+				M[col * 4 + row] = (col == row) ? 1.0f : 0.0f;
+			}
 		}
-
-		M[0] = 1.0f;
-		M[1] = 0.0f;
-		M[2] = 0.0f;
-		
-		M[4] = 0.0f;
-		M[5] = 1.0f;
-		M[6] = 0.0f;
-
-		M[8] = 0.0f;
-		M[9] = 0.0f;
-		M[10] = 1.0f;
 		
 		glLoadMatrixf(M);
 		

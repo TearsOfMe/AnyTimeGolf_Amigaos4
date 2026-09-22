@@ -2,17 +2,15 @@
 
 Dieser Port verwendet:
 
-- SDL2 für Fenster, Eingaben und den Hauptloop
+- SDL2 (libSDL2_gl4es) für Fenster, Eingaben und den Hauptloop
 - SDL2_image für PNG-Ressourcen
-- Mesa/GL für den vorhandenen OpenGL-1.x-Renderer
-- einen erzwungenen nicht-beschleunigten SDL-GL-Kontext für Software-Rendering
+- GL4ES (Mesa-basierter OpenGL 2.1 Wrapper) für Hardware-beschleunigtes Rendering via Warp3D Nova / OGLES2
+- optional LIBGL_ALWAYS_SOFTWARE=1 für Software-Rendering
 
 ## Voraussetzungen
 
 Auf dem Build-System müssen ein AmigaOS-4-Cross-Compiler, die SDK-Header und
-Bibliotheken für SDL2, SDL2_image, Mesa/GL, GLU und Bullet installiert sein.
-Die CMake-Pakete müssen die Targets `SDL2::SDL2`, `SDL2_image::SDL2_image`,
-`OpenGL::GL`, `OpenGL::GLU` sowie die Bullet-Targets bereitstellen.
+Bibliotheken für SDL2_gl4es, SDL2_image, GL4ES (`libgl4es`), `libGLU_gl4es` und Bullet installiert sein.
 
 ## Cross-Compile im vorhandenen Docker-Container
 
