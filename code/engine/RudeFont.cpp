@@ -368,10 +368,10 @@ void RudeFont::InternalWrite(float x, float y, float z, const char *text, int co
 		float v = (float(ch->srcY)) / scaleH;
 		float u2 = u + float(ch->srcW) / scaleW;
 		float v2 = v + float(ch->srcH) / scaleH;
-		
+#if defined(RUDE_IPHONE) || defined(RUDE_MACOS)
 		v = 1.0f - v;
 		v2 = 1.0f - v2;
-		
+#endif
 		float a = scale * float(ch->xAdv);
 		float w = scale * float(ch->srcW);
 		float h = -scale * float(ch->srcH);

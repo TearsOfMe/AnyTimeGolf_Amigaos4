@@ -68,7 +68,10 @@ int RudeTexture::LoadFromPVRTFile(const char *name)
 	char pngfilepath[512];
 	if(RudeFileGetFile(pngfilename, pngfilepath, sizeof(pngfilepath), true))
 	{
-		int res = LoadFromPNG(pngbasename, true);
+		bool isTerrain = (strncasecmp(pngbasename, "grass_", 6) == 0 ||
+		                  strncasecmp(pngbasename, "dirt_", 5) == 0 ||
+		                  strncasecmp(pngbasename, "sand_", 5) == 0);
+		int res = LoadFromPNG(pngbasename, isTerrain);
 		if(res == 0)
 		{
 			strncpy(m_name, name, kNameLen - 1);
@@ -271,6 +274,8 @@ LoadFromPNG_URLFail:
 	char filepath[512];
 	if(!RudeFileGetFile(filename, filepath, sizeof(filepath), true))
 		return -1;
+
+	RUDE_REPORT("LoadFromPNG %s (%s)\n", filename, filepath);
 
 	FILE *file = fopen(filepath, "rb");
 	if(file == NULL)

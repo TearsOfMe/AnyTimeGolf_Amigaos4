@@ -114,6 +114,15 @@ int util_number_is_power_2( unsigned  input )
 */
 /***********************************************************/
 
+static inline U32 PVRTReadLE32(U32 val)
+{
+#if defined(__BIG_ENDIAN__) || (defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) || defined(RUDE_AMIGAOS4)
+	return __builtin_bswap32(val);
+#else
+	return val;
+#endif
+}
+
 static void Unpack5554Colour(const AMTC_BLOCK_STRUCT *pBlock,
 							 int   ABColours[2][4])
 {
@@ -124,8 +133,9 @@ static void Unpack5554Colour(const AMTC_BLOCK_STRUCT *pBlock,
 	/*
 	// Extract A and B
 	*/
-	RawBits[0] = pBlock->PackedData[1] & (0xFFFE); /*15 bits (shifted up by one)*/
-	RawBits[1] = pBlock->PackedData[1] >> 16;	   /*16 bits*/
+	U32 packed1 = PVRTReadLE32(pBlock->PackedData[1]);
+	RawBits[0] = packed1 & (0xFFFE); /*15 bits (shifted up by one)*/
+	RawBits[1] = packed1 >> 16;	   /*16 bits*/
 
 	/*
 	//step through both colours
@@ -225,8 +235,10 @@ static void	UnpackModulations(const AMTC_BLOCK_STRUCT *pBlock,
 
 	int x, y;
 
-	BlockModMode= pBlock->PackedData[1] & 1;
-	ModulationBits	= pBlock->PackedData[0];
+	U32 packed0 = PVRTReadLE32(pBlock->PackedData[0]);
+	U32 packed1 = PVRTReadLE32(pBlock->PackedData[1]);
+	BlockModMode= packed1 & 1;
+	ModulationBits	= packed0;
 
 	/*
 	// if it's in an interpolated mode

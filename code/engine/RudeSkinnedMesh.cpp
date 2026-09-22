@@ -129,7 +129,7 @@ void RudeSkinnedMesh::Render()
 	
 	RGL.Enable(kBackfaceCull, true);
 	
-	glCullFace(GL_BACK);
+	glCullFace(GL_FRONT);
 	glFrontFace(GL_CW);
 
 	RGL.EnableClient(kVertexArray, true);
@@ -235,8 +235,10 @@ void RudeSkinnedMesh::Render()
 	
 	RGL.Enable(kBackfaceCull, true);
 	
-	glCullFace(GL_BACK);
+	glCullFace(GL_FRONT);
 	glFrontFace(GL_CW);
+	
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	
 	RGL.EnableClient(kVertexArray, true);
 	RGL.EnableClient(kTextureCoordArray, true);
@@ -314,17 +316,23 @@ void RudeSkinnedMesh::Render()
 
 				for(int a = 0; a < 3; a++)
 				{
-					float *meshverts = (float*) (mesh->pInterleaved + (long)mesh->sVertex.pData + mesh->sVertex.nStride * indices[v+a]);
-					float *meshuvs = (float*) (mesh->pInterleaved + (long)mesh->psUVW->pData + mesh->psUVW->nStride * indices[v+a]);
-					float *meshweights = (float *) (mesh->pInterleaved + (long)mesh->sBoneWeight.pData + mesh->sBoneWeight.nStride * indices[v+a]);
-					unsigned char *meshbones = (unsigned char *) (mesh->pInterleaved + (long)mesh->sBoneIdx.pData + mesh->sBoneIdx.nStride * indices[v+a]);
+					const unsigned char *base = mesh->pInterleaved + mesh->sVertex.nStride * indices[v+a];
+					float meshverts[3];
+					memcpy(meshverts, base + (long)mesh->sVertex.pData, 3 * sizeof(float));
+					float meshuvs[2];
+					memcpy(meshuvs, base + (long)mesh->psUVW->pData, 2 * sizeof(float));
+					float meshweights[3] = { 0.0f, 0.0f, 0.0f };
+					unsigned int numWeights = mesh->sBoneWeight.n > 3 ? 3 : mesh->sBoneWeight.n;
+					if(numWeights > 0 && mesh->sBoneWeight.pData)
+						memcpy(meshweights, base + (long)mesh->sBoneWeight.pData, numWeights * sizeof(float));
+					const unsigned char *meshbones = base + (long)mesh->sBoneIdx.pData;
 
 					btVector3 temppos(0,0,0);
 					
 					uvs[a][0] = meshuvs[0];
 					uvs[a][1] = meshuvs[1];
 
-					for(unsigned int w = 0; w < mesh->sBoneWeight.n; w++)
+					for(unsigned int w = 0; w < numWeights; w++)
 					{
 						float weight = meshweights[w];
 						unsigned char boneidx = meshbones[w];

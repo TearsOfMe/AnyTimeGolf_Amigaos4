@@ -41,6 +41,20 @@ from http://freeimage.sourceforge.net/ Place the file in code\game.
 
 Open code\game\win32\game.sln and compile the Debug or Release targets.
 
+AmigaOS 4
+---------
+
+Ported to **AmigaOS 4** by **TearsOfMe** (based on the original work by Robert Rose and Jake Helms / Bork 3D LLC).
+
+Key porting features and technical adaptations:
+- **Graphics:** OpenGL ES 1.1 / 2.0 via [gl4es](https://github.com/ptitSeb/gl4es) on top of Warp3D Nova (RadeonHD / RadeonRX).
+- **Audio & Input:** SDL2 audio subsystem and event loop integration with mouse / touch-drag swing controls.
+- **Architecture:** Full Big-Endian PowerPC support (PowerPC 74xx / PA6T on AmigaOne X1000 / X5000 / Sam460):
+  - In-place endian byte swapping for interleaved PowerVR POD model attributes and bone indices.
+  - Endian-safe decompression of PowerVR PVRTC texture blocks (`PVRTCDecompress`).
+  - Alignment-safe float access for odd-strided skinned meshes.
+  - Native libpng texture decoding and font glyph UV mapping.
+
 Stereoscopic 3D
 ===============
 
@@ -53,6 +67,9 @@ compatible with nVidia 3D Vision. See https://github.com/tliron/opengl-3d-vision
 License
 =======
 
-Source code and source artwork covered by LICENSE file.
+Source code and source artwork covered by the original LICENSE file:
+Copyright (c) 2008-2015, Bork 3D LLC. All rights reserved.
+
+AmigaOS 4 port modifications and additions (c) 2026 TearsOfMe.
 
 Music Copyright (c) [Mick Rippon](https://soundcloud.com/mickrip). All Rights Reserved.
