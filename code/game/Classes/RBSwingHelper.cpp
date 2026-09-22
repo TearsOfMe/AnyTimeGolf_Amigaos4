@@ -113,11 +113,11 @@ void RBSwingHelper::Render()
 		0, yout,
 	};
 	
-	unsigned int colors[] = {
-		0x7FFFFFFF,
-		0x7FFFFFFF,
-		0x00FFFFFF,
-		0x00FFFFFF
+	GLubyte colors[] = {
+		255, 255, 255, 127,
+		255, 255, 255, 127,
+		255, 255, 255, 0,
+		255, 255, 255, 0
 	};
 	
 	glDisable(GL_TEXTURE_2D);

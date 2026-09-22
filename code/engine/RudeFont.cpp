@@ -451,11 +451,21 @@ void RudeFont::Write(float x, float y, float z, const char *text, int count, uns
 	RGL.EnableClient(kColorArray, true);
 	RGL.EnableClient(kTextureCoordArray, true);
 	
-	unsigned int colors[] = {
-		topcolor,
-		topcolor,
-		botcolor,
-		botcolor
+	GLubyte tr = (GLubyte)(topcolor & 0xFF);
+	GLubyte tg = (GLubyte)((topcolor >> 8) & 0xFF);
+	GLubyte tb = (GLubyte)((topcolor >> 16) & 0xFF);
+	GLubyte ta = (GLubyte)((topcolor >> 24) & 0xFF);
+
+	GLubyte br = (GLubyte)(botcolor & 0xFF);
+	GLubyte bg = (GLubyte)((botcolor >> 8) & 0xFF);
+	GLubyte bb = (GLubyte)((botcolor >> 16) & 0xFF);
+	GLubyte ba = (GLubyte)((botcolor >> 24) & 0xFF);
+
+	GLubyte colors[] = {
+		tr, tg, tb, ta,
+		tr, tg, tb, ta,
+		br, bg, bb, ba,
+		br, bg, bb, ba
 	};
 	
 	glColorPointer(4, GL_UNSIGNED_BYTE, 0, colors);
@@ -745,7 +755,19 @@ void CFontLoader::LoadPage(int id, const char *pageFile, const char *fontFile)
 	// Load the font textures
 	//str += pageFile2;
 	
-	font->pages[id] = RudeTextureManager::GetInstance()->LoadTextureFromPVRTFile(pageFile2);
+	int texid = RudeTextureManager::GetInstance()->LoadTextureFromPNGFile(pageFile2);
+	if(texid < 0)
+		texid = RudeTextureManager::GetInstance()->LoadTextureFromPVRTFile(pageFile2);
+	font->pages[id] = texid;
+	RudeTexture *tex = RudeTextureManager::GetInstance()->GetTexture(texid);
+	if(tex)
+	{
+		tex->SetActive();
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	}
 	
 	
 	/*

@@ -129,7 +129,7 @@ void RudeSkinnedMesh::Render()
 	
 	RGL.Enable(kBackfaceCull, true);
 	
-	glCullFace(GL_FRONT);
+	glCullFace(GL_BACK);
 	glFrontFace(GL_CW);
 
 	RGL.EnableClient(kVertexArray, true);
@@ -235,7 +235,7 @@ void RudeSkinnedMesh::Render()
 	
 	RGL.Enable(kBackfaceCull, true);
 	
-	glCullFace(GL_FRONT);
+	glCullFace(GL_BACK);
 	glFrontFace(GL_CW);
 	
 	RGL.EnableClient(kVertexArray, true);
@@ -349,10 +349,12 @@ void RudeSkinnedMesh::Render()
 				glDrawArrays(GL_TRIANGLES, 0, 3);
 			}
 		}
-	
 	}
-
+	
 #endif // RUDE_SOFTWARE_SKIN
+
+	glFrontFace(GL_CCW);
+	glCullFace(GL_BACK);
 
 	RUDE_PERF_STOP(kPerfRudeSkinMeshRender);
 }

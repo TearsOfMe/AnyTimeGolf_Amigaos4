@@ -291,12 +291,14 @@ void RBBallRecorder::RenderTracers()
 			};
 			
 			unsigned int a = int(intensity * 0xFF) << 24;
+			GLubyte cur_alpha = (GLubyte)(intensity * 255.0f);
+			GLubyte last_alpha = (GLubyte)(lasta >> 24);
 			
-			unsigned int colors[] = {
-				a | 0xFFFFFF,
-				a | 0xFFFFFF,
-				lasta | 0xFFFFFF,
-				lasta | 0xFFFFFF
+			GLubyte colors[] = {
+				255, 255, 255, cur_alpha,
+				255, 255, 255, cur_alpha,
+				255, 255, 255, last_alpha,
+				255, 255, 255, last_alpha
 			};
 			
 			glVertexPointer(3, GL_FLOAT, 0, point);
