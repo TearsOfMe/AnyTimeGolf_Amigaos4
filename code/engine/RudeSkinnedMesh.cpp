@@ -233,10 +233,14 @@ void RudeSkinnedMesh::Render()
 	PVRTMATRIX viewmat;
 	glGetFloatv(GL_MODELVIEW_MATRIX, viewmat.f);
 	
+#if defined(RUDE_AMIGAOS4)
+	RGL.Enable(kBackfaceCull, false);
+	glDisable(GL_CULL_FACE);
+#else
 	RGL.Enable(kBackfaceCull, true);
-	
 	glCullFace(GL_FRONT);
 	glFrontFace(GL_CW);
+#endif
 	
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	

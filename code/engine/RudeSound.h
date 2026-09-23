@@ -52,6 +52,9 @@ public:
 	~RudeSound();
 
 public:
+#if defined(RUDE_AMIGAOS4)
+	friend void RudeAudioCallback(void *userdata, unsigned char *stream, int len);
+#endif
 
 	static RudeSound * GetInstance();
 
@@ -90,8 +93,21 @@ private:
 	SystemSoundID m_soundids[kNumSounds];
 #endif
 
-#if defined(RUDE_WIN) || defined(RUDE_AMIGAOS4)
+#if defined(RUDE_WIN)
 	int m_soundids[kNumSounds];
+#endif
+
+public:
+#if defined(RUDE_AMIGAOS4)
+	int m_soundids[kNumSounds];
+	unsigned char *m_sfxBuffers[kNumSounds];
+	unsigned int m_sfxLengths[kNumSounds];
+	unsigned int m_audioDevice;
+	void *m_bgmDecoder; // pointer to drmp3 struct
+	bool m_bgmPlaying;
+	int m_obtainedFreq;
+	unsigned short m_obtainedFormat;
+	unsigned char m_obtainedChannels;
 #endif
 	
 	eSoundBGM m_curBGM;
