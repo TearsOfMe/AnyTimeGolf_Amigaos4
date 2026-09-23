@@ -268,12 +268,14 @@ void RudeSkinnedMesh::Render()
 		if((mesh->sVtxColours.n > 0) && (mesh->sVtxColours.eType == EPODDataRGBA))
 		{
 			RGL.EnableClient(kColorArray, true);
+			glEnableClientState(GL_COLOR_ARRAY);
 			glColorPointer(4, GL_UNSIGNED_BYTE, mesh->sVtxColours.nStride, mesh->pInterleaved + (long)mesh->sVtxColours.pData);
 		}
 		else
 		{
 			RGL.EnableClient(kColorArray, false);
-			glColor4f(1.0, 1.0, 1.0, 1.0);
+			glDisableClientState(GL_COLOR_ARRAY);
+			glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 		}
 		
 		int totalbatchcnt = 0;
@@ -362,6 +364,10 @@ void RudeSkinnedMesh::Render()
 			}
 		}
 	}
+	
+	RGL.EnableClient(kColorArray, false);
+	glDisableClientState(GL_COLOR_ARRAY);
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	
 #endif // RUDE_SOFTWARE_SKIN
 
