@@ -265,18 +265,9 @@ void RudeSkinnedMesh::Render()
 		
 		unsigned short *indices	= (unsigned short*) mesh->sFaces.pData;
 		
-		if((mesh->sVtxColours.n > 0) && (mesh->sVtxColours.eType == EPODDataRGBA))
-		{
-			RGL.EnableClient(kColorArray, true);
-			glEnableClientState(GL_COLOR_ARRAY);
-			glColorPointer(4, GL_UNSIGNED_BYTE, mesh->sVtxColours.nStride, mesh->pInterleaved + (long)mesh->sVtxColours.pData);
-		}
-		else
-		{
-			RGL.EnableClient(kColorArray, false);
-			glDisableClientState(GL_COLOR_ARRAY);
-			glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-		}
+		RGL.EnableClient(kColorArray, false);
+		glDisableClientState(GL_COLOR_ARRAY);
+		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 		
 		int totalbatchcnt = 0;
 		
@@ -322,16 +313,18 @@ void RudeSkinnedMesh::Render()
 
 				for(int a = 0; a < 3; a++)
 				{
-					const unsigned char *base = mesh->pInterleaved + mesh->sVertex.nStride * indices[v+a];
 					float meshverts[3];
-					memcpy(meshverts, base + (long)mesh->sVertex.pData, 3 * sizeof(float));
+					memcpy(meshverts, mesh->pInterleaved + (long)mesh->sVertex.pData + mesh->sVertex.nStride * indices[v+a], 3 * sizeof(float));
+					
 					float meshuvs[2];
-					memcpy(meshuvs, base + (long)mesh->psUVW->pData, 2 * sizeof(float));
+					memcpy(meshuvs, mesh->pInterleaved + (long)mesh->psUVW->pData + mesh->psUVW->nStride * indices[v+a], 2 * sizeof(float));
+					
 					float meshweights[3] = { 0.0f, 0.0f, 0.0f };
 					unsigned int numWeights = mesh->sBoneWeight.n > 3 ? 3 : mesh->sBoneWeight.n;
 					if(numWeights > 0 && mesh->sBoneWeight.pData)
-						memcpy(meshweights, base + (long)mesh->sBoneWeight.pData, numWeights * sizeof(float));
-					const unsigned char *meshbones = base + (long)mesh->sBoneIdx.pData;
+						memcpy(meshweights, mesh->pInterleaved + (long)mesh->sBoneWeight.pData + mesh->sBoneWeight.nStride * indices[v+a], numWeights * sizeof(float));
+					
+					const unsigned char *meshbones = mesh->pInterleaved + (long)mesh->sBoneIdx.pData + mesh->sBoneIdx.nStride * indices[v+a];
 
 					btVector3 temppos(0,0,0);
 					

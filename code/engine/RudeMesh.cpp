@@ -301,7 +301,9 @@ void RudeMesh::Render()
 	//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	
 	RGL.EnableClient(kVertexArray, true);
+	glEnableClientState(GL_VERTEX_ARRAY);
 	RGL.EnableClient(kTextureCoordArray, true);
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 	
 	//glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
 	

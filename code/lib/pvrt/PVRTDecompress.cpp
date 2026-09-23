@@ -116,11 +116,7 @@ int util_number_is_power_2( unsigned  input )
 
 static inline U32 PVRTReadLE32(U32 val)
 {
-#if defined(__BIG_ENDIAN__) || (defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) || defined(RUDE_AMIGAOS4)
-	return __builtin_bswap32(val);
-#else
 	return val;
-#endif
 }
 
 static void Unpack5554Colour(const AMTC_BLOCK_STRUCT *pBlock,
