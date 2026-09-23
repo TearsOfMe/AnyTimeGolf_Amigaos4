@@ -44,7 +44,7 @@ Open code\game\win32\game.sln and compile the Debug or Release targets.
 AmigaOS 4
 ---------
 
-Ported to **AmigaOS 4** by **TearsOfMe** (based on the original work by Robert Rose and Jake Helms / Bork 3D LLC).
+Ported to **AmigaOS 4** by **TearsOfMe** with AI (based on the original work by Robert Rose and Jake Helms / Bork 3D LLC).
 
 Key porting features and technical adaptations:
 - **Graphics:** OpenGL ES 1.1 / 2.0 via [gl4es](https://github.com/ptitSeb/gl4es) on top of Warp3D Nova (RadeonHD / RadeonRX).
