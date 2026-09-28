@@ -301,7 +301,9 @@ void RudeMesh::Render()
 	//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	
 	RGL.EnableClient(kVertexArray, true);
+	glEnableClientState(GL_VERTEX_ARRAY);
 	RGL.EnableClient(kTextureCoordArray, true);
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 	
 	//glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
 	
@@ -345,6 +347,7 @@ void RudeMesh::Render()
 		if(m_colorOverrides[i])
 		{
 			RGL.EnableClient(kColorArray, true);
+			glEnableClientState(GL_COLOR_ARRAY);
 			glColorPointer(4, GL_UNSIGNED_BYTE, 4, m_colorOverrides[i]);
 		}
 		else
@@ -352,12 +355,14 @@ void RudeMesh::Render()
 			if(mesh->sVtxColours.n > 0)
 			{
 				RGL.EnableClient(kColorArray, true);
+				glEnableClientState(GL_COLOR_ARRAY);
 				glColorPointer(4, GL_UNSIGNED_BYTE, mesh->sVtxColours.nStride, mesh->pInterleaved + (long)mesh->sVtxColours.pData);
 			}
 			else
 			{
 				RGL.EnableClient(kColorArray, false);
-				glColor4f(1.0, 1.0, 1.0, 1.0);
+				glDisableClientState(GL_COLOR_ARRAY);
+				glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 			}
 		}
 		
@@ -365,6 +370,10 @@ void RudeMesh::Render()
 		
 		
 	}
+	
+	RGL.EnableClient(kColorArray, false);
+	glDisableClientState(GL_COLOR_ARRAY);
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	
 #if 0
 	

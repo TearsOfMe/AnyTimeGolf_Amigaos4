@@ -45,11 +45,15 @@ AmigaOS 4
 ---------
 
 Ported to **AmigaOS 4** by **TearsOfMe** (based on the original work by Robert Rose and Jake Helms / Bork 3D LLC).
+GitHub Repository: https://github.com/TearsOfMe/golf
 
 Key porting features and technical adaptations:
-- **Graphics:** OpenGL ES 1.1 / 2.0 via [gl4es](https://github.com/ptitSeb/gl4es) on top of Warp3D Nova (RadeonHD / RadeonRX).
-- **Audio & Input:** SDL2 audio subsystem and event loop integration with mouse / touch-drag swing controls.
-- **Architecture:** Full Big-Endian PowerPC support (PowerPC 74xx / PA6T on AmigaOne X1000 / X5000 / Sam460):
+- **Dual Binaries:**
+  - `golf_amigaos4`: Hardware-accelerated OpenGL via [gl4es](https://github.com/ptitSeb/gl4es) and Warp3D Nova (RadeonHD / RadeonRX).
+  - `golf_amigaos4_soft`: MiniGL / Mesa 3D software rasterizer fallback for systems without Warp3D Nova (or QEMU/WinUAE).
+- **Clean File Storage:** Saved games and configurations stored in dedicated `save/` subfolder (`PROGDIR:save/`).
+- **Audio & Input:** SDL2 audio subsystem (streaming MP3 + WAV effects) and mouse drag touch swing controls.
+- **Architecture:** Full Big-Endian PowerPC support (PowerPC 74xx / PA6T / e5500 on AmigaOne X1000 / X5000 / Sam460 / A1222+):
   - In-place endian byte swapping for interleaved PowerVR POD model attributes and bone indices.
   - Endian-safe decompression of PowerVR PVRTC texture blocks (`PVRTCDecompress`).
   - Alignment-safe float access for odd-strided skinned meshes.

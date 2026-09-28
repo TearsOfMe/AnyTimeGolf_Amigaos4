@@ -183,6 +183,10 @@ void RBGolfBall::Render()
 	
 	glScalef(m_ballScale, m_ballScale, m_ballScale);
 	
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glFrontFace(GL_CCW);
+	
 	GetMesh()->Render();
 }
 
@@ -209,6 +213,10 @@ void RBGolfBall::Render(btVector3 pos, btVector3 rot)
 	glLoadMatrixf(m);
 	
 	glScalef(kBallRadius, kBallRadius, kBallRadius);
+	
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glFrontFace(GL_CCW);
 	
 	GetMesh()->Render();
 }

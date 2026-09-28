@@ -1792,6 +1792,12 @@ void RBTGame::RenderShotInfo(bool showShotDistance, bool showClubInfo)
 		m_parText->Render();
 		m_remainingDistText->Render();
 	}
+	else
+	{
+		m_parText->SetText("PRACTICE");
+		m_parText->Render();
+		m_strokeText->Render();
+	}
 	
 
 }
@@ -1896,6 +1902,11 @@ void RBTGame::Render(float width, float height)
 	RGL.LoadIdentity();
 	RGL.Enable(kBackfaceCull, false);
 	RGL.Enable(kDepthTest, false);
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	
 	if(renderingWind)
 	{

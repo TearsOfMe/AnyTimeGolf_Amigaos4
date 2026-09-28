@@ -25,8 +25,17 @@
 #endif
 
 #ifdef RUDE_AMIGAOS4
+#include <sys/stat.h>
+
 class RudeRegistryAmigaOS4 : public RudeRegistry
 {
+private:
+	void EnsureSaveDir()
+	{
+		mkdir("PROGDIR:save", 0777);
+		mkdir("save", 0777);
+	}
+
 public:
 	int QueryByte(const TCHAR *app, const TCHAR *name, void *buffer,
 		int *buffersize)
@@ -36,12 +45,31 @@ public:
 			return -1;
 
 		char filename[256];
-		int written = snprintf(filename, sizeof(filename),
-			"PROGDIR:save_%s_%s.dat", app, name);
-		if(written < 0 || written >= (int)sizeof(filename))
-			return -1;
+		FILE *file = 0;
 
-		FILE *file = fopen(filename, "rb");
+		// 1. Try save/ subfolder first
+		int written = snprintf(filename, sizeof(filename),
+			"PROGDIR:save/save_%s_%s.dat", app, name);
+		if(written > 0 && written < (int)sizeof(filename))
+			file = fopen(filename, "rb");
+
+		if(file == 0)
+		{
+			written = snprintf(filename, sizeof(filename),
+				"save/save_%s_%s.dat", app, name);
+			if(written > 0 && written < (int)sizeof(filename))
+				file = fopen(filename, "rb");
+		}
+
+		// 2. Fall back to old root location (PROGDIR:save_*.dat) for backwards compatibility
+		if(file == 0)
+		{
+			written = snprintf(filename, sizeof(filename),
+				"PROGDIR:save_%s_%s.dat", app, name);
+			if(written > 0 && written < (int)sizeof(filename))
+				file = fopen(filename, "rb");
+		}
+
 		if(file == 0)
 			return -1;
 
@@ -68,13 +96,23 @@ public:
 		if(app == 0 || name == 0 || buffer == 0 || buffersize <= 0)
 			return -1;
 
+		EnsureSaveDir();
+
 		char filename[256];
 		int written = snprintf(filename, sizeof(filename),
-			"PROGDIR:save_%s_%s.dat", app, name);
+			"PROGDIR:save/save_%s_%s.dat", app, name);
 		if(written < 0 || written >= (int)sizeof(filename))
 			return -1;
 
 		FILE *file = fopen(filename, "wb");
+		if(file == 0)
+		{
+			// Try relative save/ path
+			written = snprintf(filename, sizeof(filename),
+				"save/save_%s_%s.dat", app, name);
+			if(written > 0 && written < (int)sizeof(filename))
+				file = fopen(filename, "wb");
+		}
 		if(file == 0)
 			return -1;
 

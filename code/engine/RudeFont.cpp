@@ -485,6 +485,9 @@ void RudeFont::Write(float x, float y, float z, const char *text, int count, uns
 	}
 	
 	InternalWrite(x, y, z, text, count);
+	
+	RGL.EnableClient(kColorArray, false);
+	glDisableClientState(GL_COLOR_ARRAY);
 }
 
 /**
