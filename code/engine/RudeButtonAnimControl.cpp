@@ -90,6 +90,7 @@ void RudeButtonAnimControl::Render()
 	tRudeButtonAnimKeyframe &frame = m_data[m_curFrame];
 	
 	RudeTextureManager::GetInstance()->SetTexture(frame.m_texture);
+	glEnable(GL_TEXTURE_2D);
 	
 	const unsigned int colors[] = {
 		0xFFFFFFFF,
@@ -101,12 +102,19 @@ void RudeButtonAnimControl::Render()
 	RGL.EnableClient(kVertexArray, true);
 	RGL.EnableClient(kColorArray, true);
 	RGL.EnableClient(kTextureCoordArray, true);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_COLOR_ARRAY);
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 	
 	glVertexPointer(2, GL_FLOAT, 0, m_points);
 	glColorPointer(4, GL_UNSIGNED_BYTE, 0, colors);
 	glTexCoordPointer(2, GL_FLOAT, 0, m_uvs);
 
 	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+	RGL.EnableClient(kColorArray, false);
+	glDisableClientState(GL_COLOR_ARRAY);
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
 /**

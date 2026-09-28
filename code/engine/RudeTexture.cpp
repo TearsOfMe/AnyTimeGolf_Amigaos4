@@ -71,7 +71,7 @@ int RudeTexture::LoadFromPVRTFile(const char *name)
 		bool needMipmaps = (strncasecmp(pngbasename, "grass_", 6) == 0 ||
 		                    strncasecmp(pngbasename, "dirt_", 5) == 0 ||
 		                    strncasecmp(pngbasename, "sand_", 5) == 0 ||
-		                    strncasecmp(pngbasename, "ball", 4) == 0);
+		                    strncasecmp(pngbasename, "ball", 4) == 0 || strncasecmp(pngbasename, "driving_range_signs", 19) == 0);
 		int res = LoadFromPNG(pngbasename, needMipmaps);
 		if(res == 0)
 		{

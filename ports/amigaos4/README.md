@@ -1,54 +1,85 @@
 # Anytime Golf auf AmigaOS 4
 
-Dieser Port verwendet:
+Dieser Port bringt **Anytime Golf: Magic Touch** (Bork 3D Game Engine) nativ auf **AmigaOS 4 (PowerPC)**.
 
-- SDL2 (libSDL2_gl4es) für Fenster, Eingaben und den Hauptloop
-- SDL2_image für PNG-Ressourcen
-- GL4ES (Mesa-basierter OpenGL 2.1 Wrapper) für Hardware-beschleunigtes Rendering via Warp3D Nova / OGLES2
-- optional LIBGL_ALWAYS_SOFTWARE=1 für Software-Rendering
+Gepflegt und portiert von **TearsOfMe**: https://github.com/TearsOfMe/AnyTimeGolf_Amigaos4
 
-## Voraussetzungen
+---
 
-Auf dem Build-System müssen ein AmigaOS-4-Cross-Compiler, die SDK-Header und
-Bibliotheken für SDL2_gl4es, SDL2_image, GL4ES (`libgl4es`), `libGLU_gl4es` und Bullet installiert sein.
+## Enthaltene Executables
 
-## Cross-Compile im vorhandenen Docker-Container
+Das Paket stellt zwei optimierte Programmversionen bereit:
 
-Der bereitgestellte Container `4530b990e258eda651876f79799ec39b9b993394c8ae72f72a619b9b63ebd2de`
-enthält den PPC-AmigaOS4-GCC 11.5.0 sowie SDL2-/Mesa-/Bullet-SDK-Dateien.
-Der Quellbaum kann zum Bauen nach `/opt/code/golf` kopiert werden:
+### 1. `golf_amigaos4` (Hardware-beschleunigt – Empfohlen)
+- **Renderer:** [GL4ES](https://github.com/ptitSeb/gl4es) (OpenGL 2.1 / ES 2.0 Wrapper) auf Basis von **Warp3D Nova**.
+- **Bibliotheken:** `libSDL2_gl4es`, `libgl4es`, `libGLU_gl4es`.
+- **Einsatzbereich:** Systeme mit moderner Grafikkarte und Warp3D Nova (z. B. AmigaOne X1000, X5000, A1222+, SAM460 mit RadeonHD oder RadeonRX).
+- **Vorteile:** Maximale Darstellungsqualität, hardwarebeschleunigtes Alpha-Blending, Mipmapping und flüssige Framerate.
 
-```sh
-docker cp . 4530b990e258eda651876f79799ec39b9b993394c8ae72f72a619b9b63ebd2de:/opt/code/golf
-docker exec 4530b990e258eda651876f79799ec39b9b993394c8ae72f72a619b9b63ebd2de \
-  /opt/ppc-amigaos/bin/ppc-amigaos-g++ --version
+### 2. `golf_amigaos4_soft` (MiniGL / Mesa Software-Fallback)
+- **Renderer:** Klassisches AmigaOS 4 **MiniGL** bzw. **Mesa 3D Software-Rasterizer**.
+- **Bibliotheken:** Standard-`libSDL2`, `libGL`, `libGLU`.
+- **Einsatzbereich:** Ältere AmigaOS-4-Rechner ohne Warp3D Nova oder virtuelle Umgebungen (wie **QEMU** oder **WinUAE**), auf denen kein Warp3D Nova verfügbar ist.
+- **Hinweis:** Kann optional mit der Umgebungsvariable `LIBGL_ALWAYS_SOFTWARE=1` betrieben werden.
+
+---
+
+## Verzeichnisstruktur & Speicherstände
+
+```
+AnytimeGolf/
+├── golf_amigaos4        # Hardwarebeschleunigte Binary (GL4ES / Warp3D Nova)
+├── golf_amigaos4_soft   # Software- / MiniGL-Fallback-Binary
+├── data/                # Spielressourcen (Texturen, 3D-Modelle, Sounds, UI)
+├── save/                # Automatisch erstellter Ordner für Spielstände
+├── README.md
+└── LICENSE
 ```
 
-Das Image stellt kein CMake bereit. Für reproduzierbare Builds werden deshalb
-die CMake-Quelldateien und die identischen Compiler-/Include-/Linker-Optionen
-als Grundlage für ein natives Container-Buildskript verwendet.
+### Spielstände & Einstellungen (`save/`)
+Alle Spielstände und Konfigurationen (Tour-Fortschritt, Soundeinstellungen, Spielzustände) werden sauber im Unterordner `PROGDIR:save/` gespeichert (`save_GOLF_GS_*.dat`).
+- Der Ordner `save` wird beim ersten Spielstart automatisch angelegt.
+- Ältere Spielstände direkt im Hauptverzeichnis werden beim Laden automatisch erkannt (Rückwärtskompatibilität).
 
-## Cross-Compile (CMake)
+---
 
-```sh
-cmake -S ports/amigaos4 -B build-amigaos4 \
-  -DCMAKE_TOOLCHAIN_FILE=ports/amigaos4/amigaos4-toolchain.cmake \
-  -DCMAKE_PREFIX_PATH=/opt/amigaos4/SDK/local
-cmake --build build-amigaos4 --parallel
+## Steuerung & Tastaturkürzel
+
+- **Maus (Touch-Emulation):**
+  - **Linke Maustaste:** Zielen, Schlägerauswahl, Klick auf UI-Elemente.
+  - **Schlag ausführen:** "Swing"-Button anklicken und mit gedrückter Maustaste nach hinten und zügig nach vorne ziehen (Magic Touch Gestensteuerung).
+- **Tastatur:**
+  - `ESC`: Spiel beenden / Menü
+  - `F11` oder `ALT + ENTER`: Vollbild / Fenstermodus umschalten
+  - `U` oder `F`: Bildschirmausrichtung kippen (Upside-Down Toggle)
+
+---
+
+## Umgebungsvariablen (Optionale Konfiguration)
+
+Über Shell-Variablen können Fenstergröße und Verhalten angepasst werden:
+
+```shell
+# Fenstergröße manuell vorgeben (Standard: 768x1024 bzw. Desktop-angepasst)
+setenv GOLF_WIDTH 1024
+setenv GOLF_HEIGHT 768
+
+# Vollbildmodus erzwingen
+setenv GOLF_FULLSCREEN 1
+
+# Bildschirm kopfüber starten (falls gewünscht)
+setenv GOLF_UPSIDEDOWN 1
+
+# Für golf_amigaos4_soft: Reines CPU-Rendering in Mesa erzwingen
+setenv LIBGL_ALWAYS_SOFTWARE 1
 ```
 
-Das erzeugte Programm erwartet `data/` neben der ausführbaren Datei. Die
-Ressourcen werden beim Build automatisch aus `code/game/Data` und
-`code/game/Resources-iPad` kopiert.
+---
 
-Spielstände werden unter AmigaOS 4 über `PROGDIR:` als Dateien
-`save_<app>_<name>.dat` neben der ausführbaren Datei gespeichert. Fehlt ein
-Spielstand oder hat er eine unerwartete Größe, wird er als nicht vorhanden
-behandelt und der jeweilige Standardzustand verwendet.
+## Kompilierung im Docker-Container
 
-## Hinweise zum Renderer
+Der Cross-Compiler im Container `4530b990e258` baut mit dem Skript `ports/amigaos4/build-in-container.sh` automatisch beide Binaries:
 
-`SDL_GL_ACCELERATED_VISUAL=0` fordert einen Software-Kontext an. Bei Mesa kann
-zusätzlich die Laufzeitvariable `LIBGL_ALWAYS_SOFTWARE=1` gesetzt werden. Der
-Port nutzt bewusst den bestehenden Fixed-Function-Renderer; Shader oder
-GPU-spezifische Erweiterungen sind nicht erforderlich.
+```sh
+docker exec 4530b990e258 /opt/code/golf/ports/amigaos4/build-in-container.sh
+```

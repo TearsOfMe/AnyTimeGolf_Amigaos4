@@ -41,7 +41,13 @@ for source in "$ROOT"/code/engine/*.cpp "$ROOT"/code/game/Classes/*.cpp; do
     compile_cxx "$source"
 done
 
-compile_cxx "$ROOT/ports/amigaos4/main.cpp"
+# Compile main for GL4ES hardware binary
+echo "CXX ports/amigaos4/main.cpp (GL4ES)"
+"$CXX" $FLAGS -c "$ROOT/ports/amigaos4/main.cpp" -o "$OBJ/main_gl4es.o"
+
+# Compile main for MiniGL/Mesa software/fallback binary
+echo "CXX ports/amigaos4/main.cpp (MiniGL/Software)"
+"$CXX" $FLAGS -DGOLF_MINIGL -c "$ROOT/ports/amigaos4/main.cpp" -o "$OBJ/main_minigl.o"
 
 for source in "$ROOT"/code/lib/pvrt/*.cpp; do
     case "$source" in
@@ -70,11 +76,15 @@ for source in $(find "$ROOT/code/lib/bullet/src" -type f -name '*.cpp' | sort); 
     "$CXX" $FLAGS -c "$source" -o "$object"
 done
 
-echo "LINK golf_amigaos4"
+COMMON_OBJS=$(find "$OBJ" -maxdepth 1 -name '*.o' ! -name 'main_*.o' ! -name '*.bullet.o' | sort)
+BULLET_OBJS=$(find "$OBJ" -maxdepth 1 -name '*.bullet.o' | sort)
+
+echo "LINK golf_amigaos4 (GL4ES / Warp3D Nova)"
 "$CXX" -o "$BUILD/golf_amigaos4" \
     -use-dynld \
-    $(find "$OBJ" -maxdepth 1 -name '*.o' ! -name '*.bullet.o' | sort) \
-    $(find "$OBJ" -maxdepth 1 -name '*.bullet.o' | sort) \
+    "$OBJ/main_gl4es.o" \
+    $COMMON_OBJS \
+    $BULLET_OBJS \
     -L"$SDK/local/newlib/lib" \
     -lSDL2_image -lSDL2_gl4es -lgl4es -lGLU_gl4es \
     -ltiff -lwebpdemux -lwebp -lwebpmux -lsharpyuv \
@@ -83,6 +93,20 @@ echo "LINK golf_amigaos4"
     -Wl,-Bstatic -lstdc++ -lgcc -Wl,-Bdynamic \
     -Wl,-Map,"$BUILD/golf_amigaos4.map"
 
+echo "LINK golf_amigaos4_soft (MiniGL / Mesa Software fallback)"
+"$CXX" -o "$BUILD/golf_amigaos4_soft" \
+    -use-dynld \
+    "$OBJ/main_minigl.o" \
+    $COMMON_OBJS \
+    $BULLET_OBJS \
+    -L"$SDK/local/newlib/lib" \
+    -lSDL2_image -lSDL2 -lGL -lGLU \
+    -ltiff -lwebpdemux -lwebp -lwebpmux -lsharpyuv \
+    -ljpeg -lpng -lz -lbz2 -lm \
+    -L/opt/ppc-amigaos/lib/gcc/ppc-amigaos/11.5.0/newlib \
+    -Wl,-Bstatic -lstdc++ -lgcc -Wl,-Bdynamic \
+    -Wl,-Map,"$BUILD/golf_amigaos4_soft.map"
+
 cp -R "$ROOT/code/game/Data" "$BUILD/data"
 cp -R "$ROOT/code/game/Resources-iPad" "$BUILD/data/Resources-iPad"
-echo "Built $BUILD/golf_amigaos4"
+echo "Built $BUILD/golf_amigaos4 and $BUILD/golf_amigaos4_soft"
