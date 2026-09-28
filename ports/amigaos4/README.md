@@ -2,7 +2,7 @@
 
 Dieser Port bringt **Anytime Golf: Magic Touch** (Bork 3D Game Engine) nativ auf **AmigaOS 4 (PowerPC)**.
 
-Gepflegt und portiert von **TearsOfMe**: https://github.com/TearsOfMe/golf
+Gepflegt und portiert von **TearsOfMe**: https://github.com/TearsOfMe/AnyTimeGolf_Amigaos4
 
 ---
 

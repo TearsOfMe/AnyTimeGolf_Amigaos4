@@ -45,7 +45,7 @@ AmigaOS 4
 ---------
 
 Ported to **AmigaOS 4** by **TearsOfMe** (based on the original work by Robert Rose and Jake Helms / Bork 3D LLC).
-GitHub Repository: https://github.com/TearsOfMe/golf
+GitHub Repository: https://github.com/TearsOfMe/AnyTimeGolf_Amigaos4
 
 Key porting features and technical adaptations:
 - **Dual Binaries:**
