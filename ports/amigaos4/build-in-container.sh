@@ -79,6 +79,18 @@ done
 COMMON_OBJS=$(find "$OBJ" -maxdepth 1 -name '*.o' ! -name 'main_*.o' ! -name '*.bullet.o' | sort)
 BULLET_OBJS=$(find "$OBJ" -maxdepth 1 -name '*.bullet.o' | sort)
 
+
+echo "Compile TinyGL software rasterizer"
+mkdir -p "$BUILD/tinygl_obj"
+for source in "$ROOT"/code/lib/tinygl/src/*.c; do
+    obj="$BUILD/tinygl_obj/$(basename "$source" .c).o"
+    "$CC" -std=c99 -O2 -I"$ROOT/code/lib/tinygl/include" -c "$source" -o "$obj"
+done
+
+echo "Compile tinygl_compat.c"
+"$CC" -std=c99 -O2 -I"$ROOT/ports/amigaos4/compat" -I"$SDK/local/common/include" -c "$ROOT/ports/amigaos4/tinygl_compat.c" -o "$BUILD/tinygl_obj/tinygl_compat.o"
+TINYGL_OBJS=$(find "$BUILD/tinygl_obj" -name '*.o' | sort)
+
 echo "LINK golf_amigaos4 (GL4ES / Warp3D Nova)"
 "$CXX" -o "$BUILD/golf_amigaos4" \
     -use-dynld \
@@ -93,14 +105,15 @@ echo "LINK golf_amigaos4 (GL4ES / Warp3D Nova)"
     -Wl,-Bstatic -lstdc++ -lgcc -Wl,-Bdynamic \
     -Wl,-Map,"$BUILD/golf_amigaos4.map"
 
-echo "LINK golf_amigaos4_soft (MiniGL / Mesa Software fallback)"
+echo "LINK golf_amigaos4_soft (Embedded TinyGL CPU Software Rasterizer -> SDL2)"
 "$CXX" -o "$BUILD/golf_amigaos4_soft" \
     -use-dynld \
     "$OBJ/main_minigl.o" \
     $COMMON_OBJS \
     $BULLET_OBJS \
+    $TINYGL_OBJS \
     -L"$SDK/local/newlib/lib" \
-    -lSDL2_image -lSDL2 -lGL -lGLU \
+    -lSDL2_image -lSDL2 \
     -ltiff -lwebpdemux -lwebp -lwebpmux -lsharpyuv \
     -ljpeg -lpng -lz -lbz2 -lm \
     -L/opt/ppc-amigaos/lib/gcc/ppc-amigaos/11.5.0/newlib \

@@ -12,6 +12,26 @@
 #include "RudeText.h"
 #include "RudeUnitTest.h"
 #include "RudeTweaker.h"
+#ifdef GOLF_MINIGL
+struct ZBuffer {
+    int xsize;
+    int ysize;
+    int linesize;
+    int mode;
+    unsigned int *pbuf;
+};
+#define ZB_MODE_RGBA 3
+extern "C" {
+    struct ZBuffer *ZB_open(int xsize, int ysize, int mode, int mask);
+    void ZB_close(struct ZBuffer *zb);
+    void glInit(void *zbuffer);
+    void glClose(void);
+}
+static struct ZBuffer* g_zbuffer = nullptr;
+static SDL_Renderer* g_renderer = nullptr;
+static SDL_Texture* g_texture = nullptr;
+#endif
+
 
 #ifdef __amigaos4__
 static const char* __attribute__((used)) g_stack_cookie = "$STACK:2097152\n";
@@ -148,7 +168,11 @@ int main(int argc, char **argv)
         }
     }
 
+    #ifndef GOLF_MINIGL
     Uint32 winFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
+#else
+    Uint32 winFlags = SDL_WINDOW_RESIZABLE;
+#endif
     const char *envFS = std::getenv("GOLF_FULLSCREEN");
     if (envFS && (std::strcmp(envFS, "1") == 0 || std::strcmp(envFS, "true") == 0)) {
         winFlags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
@@ -168,6 +192,7 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
+#ifndef GOLF_MINIGL
     SDL_GLContext context = SDL_GL_CreateContext(window);
     if (context == nullptr) {
         // Fall back to non-MSAA visual
@@ -187,6 +212,38 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
     SDL_GL_SetSwapInterval(1);
+#else
+    SDL_GLContext context = nullptr;
+    g_renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+    if (!g_renderer) {
+        std::fprintf(stderr, "SDL_CreateRenderer failed: %s\n", SDL_GetError());
+        SDL_DestroyWindow(window);
+        IMG_Quit();
+        SDL_Quit();
+        return EXIT_FAILURE;
+    }
+    g_texture = SDL_CreateTexture(g_renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, windowWidth, windowHeight);
+    if (!g_texture) {
+        std::fprintf(stderr, "SDL_CreateTexture failed: %s\n", SDL_GetError());
+        SDL_DestroyRenderer(g_renderer);
+        SDL_DestroyWindow(window);
+        IMG_Quit();
+        SDL_Quit();
+        return EXIT_FAILURE;
+    }
+    g_zbuffer = ZB_open(windowWidth, windowHeight, ZB_MODE_RGBA, 0);
+    if (!g_zbuffer) {
+        std::fprintf(stderr, "TinyGL ZB_open failed\n");
+        SDL_DestroyTexture(g_texture);
+        SDL_DestroyRenderer(g_renderer);
+        SDL_DestroyWindow(window);
+        IMG_Quit();
+        SDL_Quit();
+        return EXIT_FAILURE;
+    }
+    glInit(g_zbuffer);
+    std::printf("AnyTime Golf: Initialized embedded TinyGL software rasterizer (%dx%d ARGB32)\n", windowWidth, windowHeight);
+#endif
 
     glShadeModel(GL_SMOOTH);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
@@ -237,6 +294,21 @@ int main(int argc, char **argv)
                        event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
                 currentWinWidth = event.window.data1;
                 currentWinHeight = event.window.data2;
+#ifdef GOLF_MINIGL
+                if (g_zbuffer) {
+                    ZB_close(g_zbuffer);
+                    g_zbuffer = nullptr;
+                }
+                if (g_texture) {
+                    SDL_DestroyTexture(g_texture);
+                    g_texture = nullptr;
+                }
+                g_texture = SDL_CreateTexture(g_renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, currentWinWidth, currentWinHeight);
+                g_zbuffer = ZB_open(currentWinWidth, currentWinHeight, ZB_MODE_RGBA, 0);
+                if (g_zbuffer) {
+                    glInit(g_zbuffer);
+                }
+#endif
                 RGL.SetWindowSize(currentWinWidth, currentWinHeight);
                 game.Resize();
             } else {
@@ -257,13 +329,33 @@ int main(int argc, char **argv)
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
         game.Render(delta, static_cast<float>(kLogicalWidth), static_cast<float>(kLogicalHeight));
+#ifndef GOLF_MINIGL
         SDL_GL_SwapWindow(window);
+#else
+        if (g_texture && g_zbuffer && g_renderer) {
+            SDL_UpdateTexture(g_texture, NULL, g_zbuffer->pbuf, currentWinWidth * sizeof(GLuint));
+            SDL_RenderClear(g_renderer);
+            SDL_RenderCopy(g_renderer, g_texture, NULL, NULL);
+            SDL_RenderPresent(g_renderer);
+        }
+#endif
         if (delta < (1.0f / 60.0f)) {
             SDL_Delay(static_cast<Uint32>((1.0f / 60.0f - delta) * 1000.0f));
         }
     }
 
-    SDL_GL_DeleteContext(context);
+#ifndef GOLF_MINIGL
+    if (context) {
+        SDL_GL_DeleteContext(context);
+    }
+#else
+    if (g_zbuffer) {
+        ZB_close(g_zbuffer);
+        glClose();
+    }
+    if (g_texture) SDL_DestroyTexture(g_texture);
+    if (g_renderer) SDL_DestroyRenderer(g_renderer);
+#endif
     SDL_DestroyWindow(window);
     IMG_Quit();
     SDL_Quit();

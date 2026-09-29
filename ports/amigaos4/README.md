@@ -16,11 +16,11 @@ Das Paket stellt zwei optimierte Programmversionen bereit:
 - **Einsatzbereich:** Systeme mit moderner Grafikkarte und Warp3D Nova (z. B. AmigaOne X1000, X5000, A1222+, SAM460 mit RadeonHD oder RadeonRX).
 - **Vorteile:** Maximale Darstellungsqualität, hardwarebeschleunigtes Alpha-Blending, Mipmapping und flüssige Framerate.
 
-### 2. `golf_amigaos4_soft` (MiniGL / Mesa Software-Fallback)
-- **Renderer:** Klassisches AmigaOS 4 **MiniGL** bzw. **Mesa 3D Software-Rasterizer**.
-- **Bibliotheken:** Standard-`libSDL2`, `libGL`, `libGLU`.
-- **Einsatzbereich:** Ältere AmigaOS-4-Rechner ohne Warp3D Nova oder virtuelle Umgebungen (wie **QEMU** oder **WinUAE**), auf denen kein Warp3D Nova verfügbar ist.
-- **Hinweis:** Kann optional mit der Umgebungsvariable `LIBGL_ALWAYS_SOFTWARE=1` betrieben werden.
+### 2. `golf_amigaos4_soft` (Eingebetteter TinyGL CPU-Software-Rasterizer -> SDL2)
+- **Renderer:** Integrierter, nativer **TinyGL CPU-Software-Rasterizer** (Open-Source 3D Engine in reinem C).
+- **Framebuffer:** Rendert alle 3D-Geometrien, Texturen und Alpha-Blending direkt per CPU in einen RAM-Framebuffer und gibt ihn über ein Standard-SDL2-2D-Texture-Streaming aus.
+- **Treiberunabhängig:** Benötigt **weder MiniGL noch Warp3D noch Warp3D Nova**.
+- **Einsatzbereich:** Garantiert lauffähig auf **allen** AmigaOS 4 Installationen, Grafikkarten (auch ohne 3D-Treiber) und Emulatoren (wie **QEMU** oder **WinUAE**).
 
 ---
 

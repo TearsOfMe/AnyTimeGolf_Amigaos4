@@ -1,82 +1,85 @@
+# Anytime Golf auf AmigaOS 4
 
-Anytime Golf: Magic Touch
-=========================
+Dieser Port bringt **Anytime Golf: Magic Touch** (Bork 3D Game Engine) nativ auf **AmigaOS 4 (PowerPC)**.
 
-"Anytime Golf: Magic Touch" is an interactive golf simulation game for iPhone and iPad
-developed by [Robert Rose](http://robertwrose.com/) and Jake Helms through Bork 3D LLC.
+Gepflegt und portiert von **TearsOfMe**: https://github.com/TearsOfMe/AnyTimeGolf_Amigaos4
 
-In 2015 Bork 3D released the source code and source art material for the game to the
-public under a permissive BSD-style open source license.
-
-The source code includes the [Bork 3D Game Engine](https://en.wikipedia.org/wiki/Bork3D_Game_Engine),
-a C++ game engine capable of targeting iOS, MacOS and Windows.
-
-https://github.com/moof2k/golf
-
-
-![](art/marketing/screenshots/IMG_0033.PNG) ![](art/marketing/screenshots/IMG_0049.PNG)
-
-Compilation
-===========
-
-iOS
 ---
 
-Xcode is required.
+## Enthaltene Executables
 
-Open code/game/golf.xcodeproj and compile the iPhone or iPad, Debug or Release targets.
+Das Paket stellt zwei optimierte Programmversionen bereit:
 
-MacOS
------
+### 1. `golf_amigaos4` (Hardware-beschleunigt – Empfohlen)
+- **Renderer:** [GL4ES](https://github.com/ptitSeb/gl4es) (OpenGL 2.1 / ES 2.0 Wrapper) auf Basis von **Warp3D Nova**.
+- **Bibliotheken:** `libSDL2_gl4es`, `libgl4es`, `libGLU_gl4es`.
+- **Einsatzbereich:** Systeme mit moderner Grafikkarte und Warp3D Nova (z. B. AmigaOne X1000, X5000, A1222+, SAM460 mit RadeonHD oder RadeonRX).
+- **Vorteile:** Maximale Darstellungsqualität, hardwarebeschleunigtes Alpha-Blending, Mipmapping und flüssige Framerate.
 
-Xcode7 is required.
+### 2. `golf_amigaos4_soft` (Eingebetteter TinyGL CPU-Software-Rasterizer -> SDL2)
+- **Renderer:** Integrierter, nativer **TinyGL CPU-Software-Rasterizer** (Open-Source 3D Engine in reinem C).
+- **Framebuffer:** Rendert alle 3D-Geometrien, Texturen und Alpha-Blending direkt per CPU in einen RAM-Framebuffer und gibt ihn über ein Standard-SDL2-2D-Texture-Streaming aus.
+- **Treiberunabhängig:** Benötigt **weder MiniGL noch Warp3D noch Warp3D Nova**.
+- **Einsatzbereich:** Garantiert lauffähig auf **allen** AmigaOS 4 Installationen, Grafikkarten (auch ohne 3D-Treiber) und Emulatoren (wie **QEMU** oder **WinUAE**).
 
-Open code/game/macos/example_macos.xcodeproj and compile the Debug or Release targets.
+---
 
-Windows
--------
+## Verzeichnisstruktur & Speicherstände
 
-Visual Studio 2013 is required.
+```
+AnytimeGolf/
+├── golf_amigaos4        # Hardwarebeschleunigte Binary (GL4ES / Warp3D Nova)
+├── golf_amigaos4_soft   # Software- / MiniGL-Fallback-Binary
+├── data/                # Spielressourcen (Texturen, 3D-Modelle, Sounds, UI)
+├── save/                # Automatisch erstellter Ordner für Spielstände
+├── README.md
+└── LICENSE
+```
 
-FreeImage.dll is required to run the game. FreeImage is distributed under
-less-permissive license terms so must be downloaded separately. You can obtain FreeImage.dll
-from http://freeimage.sourceforge.net/ Place the file in code\game.
+### Spielstände & Einstellungen (`save/`)
+Alle Spielstände und Konfigurationen (Tour-Fortschritt, Soundeinstellungen, Spielzustände) werden sauber im Unterordner `PROGDIR:save/` gespeichert (`save_GOLF_GS_*.dat`).
+- Der Ordner `save` wird beim ersten Spielstart automatisch angelegt.
+- Ältere Spielstände direkt im Hauptverzeichnis werden beim Laden automatisch erkannt (Rückwärtskompatibilität).
 
-Open code\game\win32\game.sln and compile the Debug or Release targets.
+---
 
-AmigaOS 4
----------
+## Steuerung & Tastaturkürzel
 
-Ported to **AmigaOS 4** by **TearsOfMe** (based on the original work by Robert Rose and Jake Helms / Bork 3D LLC).
-GitHub Repository: https://github.com/TearsOfMe/AnyTimeGolf_Amigaos4
+- **Maus (Touch-Emulation):**
+  - **Linke Maustaste:** Zielen, Schlägerauswahl, Klick auf UI-Elemente.
+  - **Schlag ausführen:** "Swing"-Button anklicken und mit gedrückter Maustaste nach hinten und zügig nach vorne ziehen (Magic Touch Gestensteuerung).
+- **Tastatur:**
+  - `ESC`: Spiel beenden / Menü
+  - `F11` oder `ALT + ENTER`: Vollbild / Fenstermodus umschalten
+  - `U` oder `F`: Bildschirmausrichtung kippen (Upside-Down Toggle)
 
-Key porting features and technical adaptations:
-- **Dual Binaries:**
-  - `golf_amigaos4`: Hardware-accelerated OpenGL via [gl4es](https://github.com/ptitSeb/gl4es) and Warp3D Nova (RadeonHD / RadeonRX).
-  - `golf_amigaos4_soft`: MiniGL / Mesa 3D software rasterizer fallback for systems without Warp3D Nova (or QEMU/WinUAE).
-- **Clean File Storage:** Saved games and configurations stored in dedicated `save/` subfolder (`PROGDIR:save/`).
-- **Audio & Input:** SDL2 audio subsystem (streaming MP3 + WAV effects) and mouse drag touch swing controls.
-- **Architecture:** Full Big-Endian PowerPC support (PowerPC 74xx / PA6T / e5500 on AmigaOne X1000 / X5000 / Sam460 / A1222+):
-  - In-place endian byte swapping for interleaved PowerVR POD model attributes and bone indices.
-  - Endian-safe decompression of PowerVR PVRTC texture blocks (`PVRTCDecompress`).
-  - Alignment-safe float access for odd-strided skinned meshes.
-  - Native libpng texture decoding and font glyph UV mapping.
+---
 
-Stereoscopic 3D
-===============
+## Umgebungsvariablen (Optionale Konfiguration)
 
-The branch 'stereo_3d' contains an experimental port of Anytime Golf for Windows that renders
-the game in stereoscopic 3D on nVidia 3D Vision systems.
+Über Shell-Variablen können Fenstergröße und Verhalten angepasst werden:
 
-Thanks to @tliron for the example code that outlines how to render OpenGL in a manner
-compatible with nVidia 3D Vision. See https://github.com/tliron/opengl-3d-vision-bridge
+```shell
+# Fenstergröße manuell vorgeben (Standard: 768x1024 bzw. Desktop-angepasst)
+setenv GOLF_WIDTH 1024
+setenv GOLF_HEIGHT 768
 
-License
-=======
+# Vollbildmodus erzwingen
+setenv GOLF_FULLSCREEN 1
 
-Source code and source artwork covered by the original LICENSE file:
-Copyright (c) 2008-2015, Bork 3D LLC. All rights reserved.
+# Bildschirm kopfüber starten (falls gewünscht)
+setenv GOLF_UPSIDEDOWN 1
 
-AmigaOS 4 port modifications and additions (c) 2026 TearsOfMe.
+# Für golf_amigaos4_soft: Reines CPU-Rendering in Mesa erzwingen
+setenv LIBGL_ALWAYS_SOFTWARE 1
+```
 
-Music Copyright (c) [Mick Rippon](https://soundcloud.com/mickrip). All Rights Reserved.
+---
+
+## Kompilierung im Docker-Container
+
+Der Cross-Compiler im Container `4530b990e258` baut mit dem Skript `ports/amigaos4/build-in-container.sh` automatisch beide Binaries:
+
+```sh
+docker exec 4530b990e258 /opt/code/golf/ports/amigaos4/build-in-container.sh
+```
