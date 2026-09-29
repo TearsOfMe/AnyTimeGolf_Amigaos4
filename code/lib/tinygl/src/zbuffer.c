@@ -387,3 +387,10 @@ void ZB_clear(ZBuffer* zb, GLint clear_z, GLint z, GLint clear_color, GLint r, G
 		}
 	}
 }
+
+void* ZB_getPbuf(ZBuffer* zb) {
+    return zb ? (void*)zb->pbuf : NULL;
+}
+GLint ZB_getLinesize(ZBuffer* zb) {
+    return zb ? zb->linesize : 0;
+}

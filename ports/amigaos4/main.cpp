@@ -13,17 +13,13 @@
 #include "RudeUnitTest.h"
 #include "RudeTweaker.h"
 #ifdef GOLF_MINIGL
-struct ZBuffer {
-    int xsize;
-    int ysize;
-    int linesize;
-    int mode;
-    unsigned int *pbuf;
-};
+struct ZBuffer;
 #define ZB_MODE_RGBA 3
 extern "C" {
-    struct ZBuffer *ZB_open(int xsize, int ysize, int mode, int mask);
+    struct ZBuffer *ZB_open(int xsize, int ysize, int mode, void *frame_buffer);
     void ZB_close(struct ZBuffer *zb);
+    void* ZB_getPbuf(struct ZBuffer *zb);
+    int ZB_getLinesize(struct ZBuffer *zb);
     void glInit(void *zbuffer);
     void glClose(void);
 }
@@ -231,7 +227,7 @@ int main(int argc, char **argv)
         SDL_Quit();
         return EXIT_FAILURE;
     }
-    g_zbuffer = ZB_open(windowWidth, windowHeight, ZB_MODE_RGBA, 0);
+    g_zbuffer = ZB_open(windowWidth, windowHeight, ZB_MODE_RGBA, NULL);
     if (!g_zbuffer) {
         std::fprintf(stderr, "TinyGL ZB_open failed\n");
         SDL_DestroyTexture(g_texture);
@@ -304,7 +300,7 @@ int main(int argc, char **argv)
                     g_texture = nullptr;
                 }
                 g_texture = SDL_CreateTexture(g_renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, currentWinWidth, currentWinHeight);
-                g_zbuffer = ZB_open(currentWinWidth, currentWinHeight, ZB_MODE_RGBA, 0);
+                g_zbuffer = ZB_open(currentWinWidth, currentWinHeight, ZB_MODE_RGBA, NULL);
                 if (g_zbuffer) {
                     glInit(g_zbuffer);
                 }
@@ -333,10 +329,14 @@ int main(int argc, char **argv)
         SDL_GL_SwapWindow(window);
 #else
         if (g_texture && g_zbuffer && g_renderer) {
-            SDL_UpdateTexture(g_texture, NULL, g_zbuffer->pbuf, currentWinWidth * sizeof(GLuint));
-            SDL_RenderClear(g_renderer);
-            SDL_RenderCopy(g_renderer, g_texture, NULL, NULL);
-            SDL_RenderPresent(g_renderer);
+            void* pixels = ZB_getPbuf(g_zbuffer);
+            int pitch = ZB_getLinesize(g_zbuffer);
+            if (pixels && pitch > 0) {
+                SDL_UpdateTexture(g_texture, NULL, pixels, pitch);
+                SDL_RenderClear(g_renderer);
+                SDL_RenderCopy(g_renderer, g_texture, NULL, NULL);
+                SDL_RenderPresent(g_renderer);
+            }
         }
 #endif
         if (delta < (1.0f / 60.0f)) {

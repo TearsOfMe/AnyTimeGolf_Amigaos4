@@ -377,3 +377,6 @@ static void* gl_zalloc(GLint size) { return calloc(1, size); }
 #endif
 
 #endif /* _tgl_zbuffer_h_ */
+
+void* ZB_getPbuf(ZBuffer* zb);
+GLint ZB_getLinesize(ZBuffer* zb);
